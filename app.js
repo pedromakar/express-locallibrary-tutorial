@@ -35,13 +35,57 @@ app.use(
   helmet.contentSecurityPolicy({
     directives: {
       "script-src": ["'self'", "cdn.jsdelivr.net"],
+      "img-src": ["'self'", "data:", "images.unsplash.com"],
     },
   })
 );
 
 app.use(compression()); // Compress all routes
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "backend", "public")));
+
+// API and HTML Page Routes mapping from ecommerce backend
+const authRoutes = require("./backend/src/routes/authRoutes");
+const productRoutes = require("./backend/src/routes/productRoutes");
+
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "login.html"));
+});
+
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "register.html"));
+});
+
+app.get("/account", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "profile.html"));
+});
+
+app.get("/profile", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "profile.html"));
+});
+
+app.get("/products", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "products.html"));
+});
+
+app.get("/category", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "category.html"));
+});
+
+app.get("/product", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "product.html"));
+});
+
+app.get("/cart", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "cart.html"));
+});
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "backend", "public", "admin.html"));
+});
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);

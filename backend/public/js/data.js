@@ -1,0 +1,83 @@
+export const categories = [
+  {
+    id: 'collections',
+    title: 'Coleções Fitness',
+    description: 'Roupas de treino com estilo, conforto e performance para qualquer rotina.',
+    image: 'https://images.unsplash.com/photo-1528701800489-20b9f7462f8c?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'tops',
+    title: 'Tops e Camisetas',
+    description: 'Peças leves e respiráveis para treinos de alta intensidade.',
+    image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'leggings',
+    title: 'Leggings e Calças',
+    description: 'Modelagens confortáveis com máxima mobilidade.',
+    image: 'https://images.unsplash.com/photo-1526403224701-24a4f15c58d7?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'accessories',
+    title: 'Acessórios',
+    description: 'Meias, bonés e itens que completam seu look esportivo.',
+    image: 'https://images.unsplash.com/photo-1526401485004-8d1d5ef96588?auto=format&fit=crop&w=800&q=80',
+  },
+];
+
+export const products = [
+  {
+    id: 'p1',
+    name: 'Top Active Mesh',
+    category: 'tops',
+    price: 129.9,
+    description: 'Top de treino com tecido respirável e design moderno.',
+    image: 'https://images.unsplash.com/photo-1564468781196-eb559f846169?auto=format&fit=crop&w=800&q=80',
+    stock: 18,
+  },
+  {
+    id: 'p2',
+    name: 'Legging Power',
+    category: 'leggings',
+    price: 189.0,
+    description: 'Legging cintura alta com compressão leve para todos os treinos.',
+    image: 'https://images.unsplash.com/photo-1579758629930-0364c59fb3ec?auto=format&fit=crop&w=800&q=80',
+    stock: 12,
+  },
+  {
+    id: 'p3',
+    name: 'Camiseta Dry Fit',
+    category: 'tops',
+    price: 99.9,
+    description: 'Camiseta seca rápido, perfeita para corrida e academia.',
+    image: 'https://images.unsplash.com/photo-1526401485004-8d1d5ef96588?auto=format&fit=crop&w=800&q=80',
+    stock: 26,
+  },
+  {
+    id: 'p4',
+    name: 'Short Flex',
+    category: 'collections',
+    price: 109.5,
+    description: 'Short leve com bolsos ocultos para maior praticidade.',
+    image: 'https://images.unsplash.com/photo-1508606572321-901ea4437072?auto=format&fit=crop&w=800&q=80',
+    stock: 22,
+  },
+  {
+    id: 'p5',
+    name: 'Legging Sculpt',
+    category: 'leggings',
+    price: 199.9,
+    description: 'Modelagem slim e toque macio para flexibilidade total.',
+    image: 'https://images.unsplash.com/photo-1599533767041-1a0d9c4c0377?auto=format&fit=crop&w=800&q=80',
+    stock: 10,
+  },
+  {
+    id: 'p6',
+    name: 'Kits de Meias',
+    category: 'accessories',
+    price: 49.9,
+    description: 'Meias esportivas antiderrapantes para treinos intensos.',
+    image: 'https://images.unsplash.com/photo-1528701800489-20b9f7462f8c?auto=format&fit=crop&w=800&q=80',
+    stock: 34,
+  },
+];

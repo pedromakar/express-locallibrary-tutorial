@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MD Essential - Minha Conta</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="top-nav">
+      <div class="brand">MD Essential</div>
+      <div class="admin-actions">
+        <a class="button" href="/">Voltar à loja</a>
+        <button id="logout-button" class="button secondary">Sair</button>
+      </div>
+    </nav>
+
+    <section class="box login-box">
+      <h1>Minha Conta</h1>
+      <p id="welcome-text">Carregando...</p>
+      <div id="profile-data" class="profile-data"></div>
+    </section>
+
+    <section class="box" id="profile-products">
+      <h2>Produtos disponíveis</h2>
+      <div id="profile-products-list" class="products"></div>
+    </section>
+  </div>
+
+  <script src="profile.js"></script>
+</body>
+</html>
