@@ -1,7 +1,18 @@
 import { renderNav, renderFooter, renderProductCard, renderCategoryCard } from './ui.js';
 
 const root = document.getElementById('page-root');
-const fallbackImage = 'https://images.unsplash.com/photo-1503342452485-86fd4d463029?auto=format&fit=crop&w=800&q=80';
+const categoryPlaceholderImages = [
+  'https://picsum.photos/seed/fitness1/400/500',
+  'https://picsum.photos/seed/fitness2/400/500',
+  'https://picsum.photos/seed/fitness3/400/500',
+  'https://picsum.photos/seed/fitness4/400/500',
+  'https://picsum.photos/seed/fitness5/400/500',
+  'https://picsum.photos/seed/fitness6/400/500',
+  'https://picsum.photos/seed/fitness7/400/500',
+  'https://picsum.photos/seed/fitness8/400/500',
+  'https://picsum.photos/seed/fitness9/400/500',
+  'https://picsum.photos/seed/fitness10/400/500',
+];
 
 async function fetchHomeData() {
   const [productRes, categoryRes] = await Promise.all([
@@ -15,11 +26,11 @@ async function fetchHomeData() {
 }
 
 function buildCategoryItems(categories) {
-  return categories.map((category) => ({
+  return categories.map((category, index) => ({
     id: encodeURIComponent(category.name),
     title: category.name,
     description: `${category.count} produto(s) nesta categoria`,
-    image: fallbackImage,
+    image: categoryPlaceholderImages[index % categoryPlaceholderImages.length],
   }));
 }
 
@@ -27,7 +38,7 @@ function render(products, categories) {
   root.innerHTML = `
     ${renderNav('home')}
     <main class="content">
-      <section class="hero box">
+      <section class="hero">
         <div>
           <p class="eyebrow">Bem-vindo</p>
           <h1>MD Essential Fitness</h1>
@@ -39,17 +50,21 @@ function render(products, categories) {
         </div>
       </section>
 
-      <section class="box section-grid">
-        <h2>Categorias</h2>
-        <div class="grid-list">
-          ${buildCategoryItems(categories).map(renderCategoryCard).join('')}
+      <section class="section section-grid">
+        <div class="container-custom">
+          <h2>Categorias</h2>
+          <div class="grid-list">
+            ${buildCategoryItems(categories).map(renderCategoryCard).join('')}
+          </div>
         </div>
       </section>
 
-      <section class="box section-grid">
-        <h2>Produtos em destaque</h2>
-        <div class="grid-list">
-          ${products.slice(0, 6).map(renderProductCard).join('')}
+      <section class="section section--alt section-grid">
+        <div class="container-custom">
+          <h2>Produtos em destaque</h2>
+          <div class="grid-list">
+            ${products.slice(0, 6).map(renderProductCard).join('')}
+          </div>
         </div>
       </section>
     </main>
