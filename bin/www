@@ -7,41 +7,20 @@
 var app = require("../app");
 var debug = require("debug")("express-locallibrary-tutorial:server");
 var http = require("http");
-
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', 'backend', '.env') });
 
 /**
  * Get port from environment and store in Express.
  */
-let port = normalizePort(process.env.PORT || "3000");
+let port = normalizePort(process.env.PORT || "5001");
 app.set("port", port);
 
 /**
  * Set up mongoose connection
  */
-const mongoose = require("mongoose");
-mongoose.set('bufferCommands', false);
-const dev_db_url = "mongodb+srv://pedro:12345@cluster0.7euduan.mongodb.net/?appName=Cluster0";
-const mongoDB = process.env.MONGODB_URI || dev_db_url;
-
-// Attempt to connect to MongoDB, but continue even if it fails
-(async () => {
-  try {
-    await mongoose.connect(mongoDB);
-    console.log('MongoDB connected');
-  } catch (err) {
-    console.warn('⚠️ MongoDB connection failed – server will run without DB.');
-    console.error(err);
-  }
-})();
-
-// Connection error handlers
-mongoose.connection.on('error', err => {
-  console.error('MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.warn('MongoDB disconnected');
-});
+const connectDB = require("../backend/src/config/db");
+connectDB();
 
 /**
  * Create HTTP server.

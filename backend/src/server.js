@@ -1,10 +1,14 @@
+// Force Google DNS for SRV record resolution (local DNS doesn't support SRV queries)
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./src/config/db');
-const productRoutes = require('./src/routes/productRoutes');
-const authRoutes = require('./src/routes/authRoutes');
+const connectDB = require('./config/db');
+const productRoutes = require('./routes/productRoutes');
+const authRoutes = require('./routes/authRoutes');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
@@ -29,7 +33,7 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 connectDB();
 
@@ -37,43 +41,43 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, '../public', 'login.html'));
 });
 
 app.get('/register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'register.html'));
+  res.sendFile(path.join(__dirname, '../public', 'register.html'));
 });
 
 app.get('/account', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+  res.sendFile(path.join(__dirname, '../public', 'profile.html'));
 });
 
 app.get('/profile', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+  res.sendFile(path.join(__dirname, '../public', 'profile.html'));
 });
 
 app.get('/products', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'products.html'));
+  res.sendFile(path.join(__dirname, '../public', 'products.html'));
 });
 
 app.get('/category', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'category.html'));
+  res.sendFile(path.join(__dirname, '../public', 'category.html'));
 });
 
 app.get('/product', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'product.html'));
+  res.sendFile(path.join(__dirname, '../public', 'product.html'));
 });
 
 app.get('/cart', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'cart.html'));
+  res.sendFile(path.join(__dirname, '../public', 'cart.html'));
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, '../public', 'admin.html'));
 });
 
 const PORT = process.env.PORT || 5000;
