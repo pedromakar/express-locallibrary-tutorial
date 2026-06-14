@@ -120,6 +120,26 @@ export function renderNav(activePage) {
         <button class="button w-100" id="drawer-checkout">FINALIZAR COMPRA</button>
       </div>
     </div>
+
+    <!-- Search Drawer -->
+    <div class="search-drawer" id="search-drawer">
+      <div class="drawer-header">
+        <h2 class="text-uppercase-bold">BUSCAR PRODUTO</h2>
+        <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="drawer-body">
+        <form id="global-search-form" class="auth-form-drawer">
+          <label>O QUE VOCÊ PROCURA?</label>
+          <div class="position-relative">
+            <input type="text" id="global-search-input" placeholder="Ex: Regata, T-shirt, Legging..." required />
+            <button type="submit" class="icon-button" style="position: absolute; right: 10px; top: 10px; padding: 5px;">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </form>
+        <div id="search-results-preview" class="mt-4"></div>
+      </div>
+    </div>
   `;
 }
 
@@ -137,9 +157,9 @@ async function renderDrawerItems() {
   const container = document.getElementById('drawer-items');
   if (!container) return;
   const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-  const productIds = Object.keys(cart);
+  const cartKeys = Object.keys(cart);
 
-  if (productIds.length === 0) {
+  if (cartKeys.length === 0) {
     container.innerHTML = '<p class="text-center py-5">Seu carrinho está vazio.</p>';
     document.getElementById('drawer-subtotal').textContent = 'R$ 0,00';
     document.getElementById('shipping-progress').style.width = '0%';
@@ -147,27 +167,36 @@ async function renderDrawerItems() {
     return;
   }
 
+  // Fetch products to get details
   const res = await fetch('/api/products');
   const allProducts = await res.json();
-  const cartItems = allProducts.filter(p => cart[p._id]);
 
   let subtotal = 0;
-  container.innerHTML = cartItems.map(item => {
-    const qty = cart[item._id];
-    subtotal += item.price * qty;
+  container.innerHTML = cartKeys.map(key => {
+    const item = cart[key];
+    const product = allProducts.find(p => p._id === item.productId);
+    if (!product) return '';
+
+    const qty = item.quantity;
+    subtotal += product.price * qty;
+    
     return `
       <div class="drawer-cart-item">
-        <img src="${item.image}" alt="${item.name}" />
+        <img src="${product.image || product.images[0]}" alt="${product.name}" />
         <div>
           <div class="d-flex justify-content-between">
-            <h3 class="text-uppercase-bold" style="font-size: 0.7rem;">${item.name}</h3>
-            <button onclick="updateQty('${item._id}', 0)" style="background:none; border:none; cursor:pointer;">&times;</button>
+            <h3 class="text-uppercase-bold" style="font-size: 0.7rem;">${product.name}</h3>
+            <button onclick="updateQty('${key}', 0)" style="background:none; border:none; cursor:pointer;">&times;</button>
           </div>
-          <span style="font-size: 0.75rem;">R$ ${item.price.toFixed(2)}</span>
+          <div class="item-variations">
+            ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
+            ${item.color ? `<span class="item-variation">${item.color}</span>` : ''}
+          </div>
+          <span style="font-size: 0.75rem;">R$ ${product.price.toFixed(2)}</span>
           <div class="drawer-qty-control">
-            <button class="drawer-qty-btn" onclick="updateQty('${item._id}', ${qty - 1})">-</button>
+            <button class="drawer-qty-btn" onclick="updateQty('${key}', ${qty - 1})">-</button>
             <span style="font-size: 0.8rem;">${qty}</span>
-            <button class="drawer-qty-btn" onclick="updateQty('${item._id}', ${qty + 1})">+</button>
+            <button class="drawer-qty-btn" onclick="updateQty('${key}', ${qty + 1})">+</button>
           </div>
         </div>
       </div>
@@ -180,41 +209,97 @@ async function renderDrawerItems() {
   document.getElementById('shipping-msg').textContent = subtotal >= 198 ? 'VOCÊ GANHOU FRETE GRÁTIS!' : `Faltam R$ ${(198 - subtotal).toFixed(2)} para FRETE GRÁTIS`;
 }
 
-window.updateQty = async (id, newQty) => {
+window.updateQty = async (key, newQty) => {
   const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-  if (newQty <= 0) delete cart[id]; else cart[id] = newQty;
+  if (newQty <= 0) delete cart[key]; 
+  else cart[key].quantity = newQty;
+  
   localStorage.setItem('md-essential-cart', JSON.stringify(cart));
   await syncCart();
 };
 
-export function syncCart() { /* ... existing syncCart function ... */ } // Placeholder as the function was not provided fully in the context to avoid large response.
+export async function syncCart() {
+  updateCartBadge();
+  await renderDrawerItems();
+}
+
+export function addToCart(productId, stock, size = null, color = null) {
+  const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
+  
+  // Unique key for combinations: productId_size_color
+  const cartKey = `${productId}${size ? `_${size}` : ''}${color ? `_${color}` : ''}`;
+  
+  const currentQty = cart[cartKey] ? cart[cartKey].quantity : 0;
+  
+  if (currentQty >= stock) {
+    alert('Limite de estoque atingido para este produto.');
+    return;
+  }
+
+  cart[cartKey] = {
+    productId,
+    quantity: currentQty + 1,
+    size,
+    color
+  };
+  
+  localStorage.setItem('md-essential-cart', JSON.stringify(cart));
+  
+  syncCart();
+  window.toggleCartDrawer(true);
+}
+
+export function bindGlobalAddButtons() {
+  document.querySelectorAll('.add-to-cart-button').forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = 'true';
+
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const productId = button.dataset.id;
+      const stock = parseInt(button.dataset.stock, 10);
+      
+      // For quick add from list, we might not have size/color, 
+      // but the logic now supports them as null.
+      addToCart(productId, stock);
+      
+      const originalText = button.textContent;
+      button.textContent = 'ADICIONADO!';
+      button.classList.add('active');
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('active');
+      }, 1200);
+    });
+  });
+}
 
 export function initDrawerEvents() {
   const globalOverlay = document.getElementById('global-overlay');
   const cartDrawer = document.getElementById('cart-drawer');
   const loginDrawer = document.getElementById('login-drawer');
   const mobileMenuDrawer = document.getElementById('mobile-menu-drawer');
+  const searchDrawer = document.getElementById('search-drawer');
 
-  // Helper to close all drawers
   function closeAllDrawers() {
     cartDrawer?.classList.remove('open');
     loginDrawer?.classList.remove('open');
     mobileMenuDrawer?.classList.remove('open');
+    searchDrawer?.classList.remove('open');
     globalOverlay?.classList.remove('open');
   }
 
-  // Toggle functions for each drawer
   window.toggleCartDrawer = (open = true) => {
-    closeAllDrawers(); // Close others first
+    closeAllDrawers();
     if (open) {
       cartDrawer?.classList.add('open');
       globalOverlay?.classList.add('open');
-      renderDrawerItems(); // Re-render cart items when opened
+      renderDrawerItems();
     }
   };
 
   window.toggleLoginDrawer = (open = true) => {
-    closeAllDrawers(); // Close others first
+    closeAllDrawers();
     if (open) {
       loginDrawer?.classList.add('open');
       globalOverlay?.classList.add('open');
@@ -222,29 +307,72 @@ export function initDrawerEvents() {
   };
 
   window.toggleMobileMenuDrawer = (open = true) => {
-    closeAllDrawers(); // Close others first
+    closeAllDrawers();
     if (open) {
       mobileMenuDrawer?.classList.add('open');
       globalOverlay?.classList.add('open');
     }
   };
 
-  // Event Listeners for opening drawers
+  window.toggleSearchDrawer = (open = true) => {
+    closeAllDrawers();
+    if (open) {
+      searchDrawer?.classList.add('open');
+      globalOverlay?.classList.add('open');
+      document.getElementById('global-search-input')?.focus();
+    }
+  };
+
   document.getElementById('cart-drawer-toggle')?.addEventListener('click', () => toggleCartDrawer(true));
   document.getElementById('login-drawer-toggle')?.addEventListener('click', () => toggleLoginDrawer(true));
   document.getElementById('mobile-menu-toggle')?.addEventListener('click', () => toggleMobileMenuDrawer(true));
+  document.getElementById('search-toggle')?.addEventListener('click', () => toggleSearchDrawer(true));
   
-  // Event listener for mobile login toggle (inside mobile menu)
   document.getElementById('mobile-login-toggle')?.addEventListener('click', () => {
-    toggleMobileMenuDrawer(false); // Close mobile menu
-    toggleLoginDrawer(true); // Open login drawer
+    toggleMobileMenuDrawer(false);
+    toggleLoginDrawer(true);
   });
 
-  // Event Listeners for closing drawers (using common class for buttons)
   document.querySelectorAll('.close-drawers').forEach(btn => btn.addEventListener('click', closeAllDrawers));
   globalOverlay?.addEventListener('click', closeAllDrawers);
 
-  // Tab Switching in Login Drawer
+  // Global Search Functionality
+  const searchForm = document.getElementById('global-search-form');
+  const searchInput = document.getElementById('global-search-input');
+  const searchResults = document.getElementById('search-results-preview');
+
+  searchForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    searchResults.innerHTML = '<p class="text-center py-3">Buscando...</p>';
+
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
+      const products = await res.json();
+
+      if (products.length === 0) {
+        searchResults.innerHTML = '<p class="text-center py-3">Nenhum produto encontrado.</p>';
+      } else {
+        searchResults.innerHTML = `
+          <div class="search-grid-preview" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            ${products.slice(0, 4).map(p => `
+              <a href="/product?id=${p._id}" class="search-item-preview" style="display: block; text-decoration: none; color: inherit;">
+                <img src="${p.image || p.images[0]}" style="width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 4px;" />
+                <h4 style="font-size: 0.7rem; margin-top: 5px; text-transform: uppercase;">${p.name}</h4>
+                <p style="font-size: 0.75rem; font-weight: 800; color: var(--color-accent);">R$ ${p.price.toFixed(2)}</p>
+              </a>
+            `).join('')}
+          </div>
+          ${products.length > 4 ? `<a href="/products?search=${encodeURIComponent(query)}" class="button small w-100 mt-3">VER TODOS OS ${products.length} RESULTADOS</a>` : ''}
+        `;
+      }
+    } catch (err) {
+      searchResults.innerHTML = '<p class="text-center py-3">Erro ao buscar.</p>';
+    }
+  });
+
   const loginTab = document.getElementById('tab-login-btn');
   const regTab = document.getElementById('tab-register-btn');
   const loginContent = document.getElementById('drawer-login-content');
@@ -259,7 +387,6 @@ export function initDrawerEvents() {
     regContent.style.display = 'block'; loginContent.style.display = 'none';
   });
 
-  // Login Logic
   document.getElementById('drawer-login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('drawer-login-user').value;
@@ -276,11 +403,11 @@ export function initDrawerEvents() {
       const data = await res.json();
       if (!res.ok) { msg.textContent = data.message; btn.textContent = 'ENTRAR'; btn.disabled = false; return; }
       localStorage.setItem('md-essential-admin-token', data.token);
-      location.reload(); // Quickest way to update UI
+      localStorage.setItem('md-essential-user-id', data._id || data.id); // Storing user ID for history lookups
+      location.reload();
     } catch (err) { msg.textContent = 'Erro ao conectar.'; btn.disabled = false; }
   });
 
-  // Register Logic
   document.getElementById('drawer-register-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -300,25 +427,108 @@ export function initDrawerEvents() {
       setTimeout(() => loginTab.click(), 1500);
     } catch (err) { msg.textContent = 'Erro ao conectar.'; }
   });
+
+  document.getElementById('drawer-checkout')?.addEventListener('click', async () => {
+    const token = localStorage.getItem('md-essential-admin-token');
+    if (!token) {
+      alert('Por favor, faça login para finalizar a compra.');
+      toggleLoginDrawer(true);
+      return;
+    }
+
+    const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
+    const items = Object.entries(cart).map(([productId, quantity]) => ({
+      productId,
+      quantity
+    }));
+
+    if (items.length === 0) {
+      alert('Seu carrinho está vazio.');
+      return;
+    }
+
+    const btn = document.getElementById('drawer-checkout');
+    const originalText = btn.textContent;
+    btn.textContent = 'PROCESSANDO...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Erro ao processar pedido');
+      }
+
+      localStorage.removeItem('md-essential-cart');
+      const container = document.getElementById('drawer-items');
+      container.innerHTML = `
+        <div class="text-center py-5">
+          <i class="fas fa-check-circle" style="font-size: 2rem; color: #2ecc71;"></i>
+          <p class="mt-2">Pedido <strong>#${data.orderId}</strong> realizado!</p>
+          <a href="/products" class="button small mt-2">Continuar</a>
+        </div>
+      `;
+      btn.style.display = 'none';
+      document.getElementById('drawer-subtotal').textContent = 'R$ 0,00';
+      updateCartBadge();
+    } catch (err) {
+      alert(err.message);
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
 }
 
 export function renderProductCard(product) {
   const productId = product._id || product.id;
   const stock = product.countInStock || 0;
+  const badge = product.badge;
+  const image = product.image || (product.images && product.images.length ? product.images[0] : '');
+
   return `
     <article class="card product-card">
       <div class="product-image">
-        ${product.image ? `<img src="${product.image}" alt="${product.name}" />` : '<span>Sem imagem</span>'}
+        ${badge ? `<div class="badge">${badge}</div>` : ''}
+        ${image ? `<img src="${image}" alt="${product.name}" />` : '<span>Sem imagem</span>'}
+        <div class="product-card-overlay">
+           <a class="button small" href="/product?id=${productId}">VER DETALHES</a>
+        </div>
       </div>
       <div class="card-body">
-        <h3>${product.name}</h3>
-        <p>${product.description}</p>
-        <div class="product-meta">
-          <span>R$ ${product.price.toFixed(2)}</span>
-          <a class="button small" href="/product?id=${productId}">Ver</a>
+        <h3 class="product-title">${product.name}</h3>
+        <div class="product-price-row">
+          <span class="price-tag">R$ ${product.price.toFixed(2)}</span>
         </div>
-        <div class="product-actions">
-          <button class="button small add-to-cart-button" data-id="${productId}" data-stock="${stock}">Adicionar ao carrinho</button>
+        
+        <div class="product-variations-preview">
+          <div class="swatches-row">
+            <span class="swatch" style="background: #000;"></span>
+            <span class="swatch" style="background: #fff; border: 1px solid #ddd;"></span>
+            <span class="swatch" style="background: #808080;"></span>
+          </div>
+          <div class="sizes-row">
+            <span>P</span>
+            <span>M</span>
+            <span>G</span>
+            <span>GG</span>
+          </div>
+        </div>
+
+        <div class="product-actions mt-auto">
+          <button class="button small w-100 add-to-cart-button" 
+                  data-id="${productId}" 
+                  data-stock="${stock}">
+            ADICIONAR AO CARRINHO
+          </button>
         </div>
       </div>
     </article>
@@ -349,4 +559,3 @@ export function renderFooter() {
     </footer>
   `;
 }
-

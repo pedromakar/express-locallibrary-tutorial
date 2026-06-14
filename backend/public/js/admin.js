@@ -89,6 +89,13 @@ function renderAdminPage() {
         <div id="admin-message" class="message"></div>
       </section>
 
+      <section class="box" id="admin-orders-section">
+        <h2>Gestão de Pedidos</h2>
+        <div id="admin-orders-list" class="orders-list">
+          <p class="text-center py-4">Carregando pedidos...</p>
+        </div>
+      </section>
+
       <section class="box" id="admin-products-section">
         <h2>Produtos Existentes</h2>
         <div id="admin-products-list" class="products"></div>
@@ -192,8 +199,98 @@ async function fetchProducts() {
     renderAdminProducts(products);
     renderAdminDashboard(products);
     populateCategorySelect(products);
+    fetchOrders(); // Also fetch orders
   } catch (error) {
     adminProductsList.innerHTML = '<p>Erro ao carregar produtos.</p>';
+  }
+}
+
+async function fetchOrders() {
+  const ordersList = document.getElementById('admin-orders-list');
+  try {
+    const response = await fetch('/api/admin/orders', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const orders = await response.json();
+    renderAdminOrders(orders);
+  } catch (error) {
+    ordersList.innerHTML = '<p>Erro ao carregar pedidos.</p>';
+  }
+}
+
+function renderAdminOrders(orders) {
+  const ordersList = document.getElementById('admin-orders-list');
+  if (!orders || orders.length === 0) {
+    ordersList.innerHTML = '<p class="text-center py-4">Nenhum pedido encontrado.</p>';
+    return;
+  }
+
+  ordersList.innerHTML = `
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--color-border); text-align: left;">
+            <th class="py-3">PEDIDO</th>
+            <th class="py-3">CLIENTE</th>
+            <th class="py-3">DATA</th>
+            <th class="py-3">TOTAL</th>
+            <th class="py-3">STATUS</th>
+            <th class="py-3">AÇÕES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(order => `
+            <tr style="border-bottom: 1px solid var(--color-border);">
+              <td class="py-3 fw-bold">#${order._id.slice(-6).toUpperCase()}</td>
+              <td class="py-3">${order.user ? order.user.username : 'Excluído'}<br><small class="text-muted">${order.user ? order.user.email : ''}</small></td>
+              <td class="py-3">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</td>
+              <td class="py-3 fw-bold">R$ ${order.totalPrice.toFixed(2)}</td>
+              <td class="py-3">
+                <select class="status-select" data-id="${order._id}" style="padding: 4px; border-radius: 4px; background: var(--color-bg-alt); color: var(--color-text-main); border: 1px solid var(--color-border);">
+                  <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pendente</option>
+                  <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>Pago</option>
+                  <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Enviado</option>
+                  <option value="canceled" ${order.status === 'canceled' ? 'selected' : ''}>Cancelado</option>
+                </select>
+              </td>
+              <td class="py-3">
+                <button class="button small" onclick="alert('Itens: ' + '${order.items.map(i => `${i.quantity}x ${i.name} (${i.size || '-'})`).join(', ')}')">Ver Itens</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const orderId = e.target.dataset.id;
+      const newStatus = e.target.value;
+      await updateOrderStatus(orderId, newStatus);
+    });
+  });
+}
+
+async function updateOrderStatus(orderId, status) {
+  try {
+    const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      adminMessage.textContent = 'Status do pedido atualizado com sucesso.';
+      setTimeout(() => adminMessage.textContent = '', 3000);
+    } else {
+      alert(data.message || 'Erro ao atualizar status');
+    }
+  } catch (err) {
+    alert('Erro ao conectar com o servidor');
   }
 }
 

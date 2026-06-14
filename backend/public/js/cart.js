@@ -1,4 +1,4 @@
-import { renderNav, renderFooter } from './ui.js';
+import { renderNav, renderFooter, syncCart } from './ui.js';
 
 const CART_KEY = 'md-essential-cart';
 const root = document.getElementById('page-root');
@@ -14,142 +14,152 @@ root.innerHTML = `
   ${renderFooter()}
 `;
 
-function getCart() {
-  return JSON.parse(localStorage.getItem(CART_KEY) || '{}');
-}
-
-function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
-
-async function loadProducts() {
-  const response = await fetch('/api/products');
-  return response.ok ? await response.json() : [];
-}
-
 async function renderCart() {
   const cartContent = document.getElementById('cart-content');
-  const cart = getCart();
-  const products = await loadProducts();
-  const lineItems = Object.entries(cart)
-    .map(([productId, quantity]) => {
-      const product = products.find((item) => item._id === productId);
-      if (!product) return null;
-      return { product, quantity };
-    })
-    .filter(Boolean);
+  const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+  const cartKeys = Object.keys(cart);
 
-  if (!lineItems.length) {
+  if (cartKeys.length === 0) {
     cartContent.innerHTML = `
       <div class="cart-empty">
-        <p>O carrinho está vazio por enquanto.</p>
+        <p>Seu carrinho está vazio.</p>
         <a class="button" href="/products">Ver produtos</a>
       </div>
     `;
     return;
   }
 
-  const total = lineItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const response = await fetch('/api/products');
+  const allProducts = await response.json();
+
+  let subtotal = 0;
+  const lineItemsHtml = cartKeys.map(key => {
+    const item = cart[key];
+    const product = allProducts.find(p => p._id === item.productId);
+    if (!product) return '';
+
+    const itemTotal = product.price * item.quantity;
+    subtotal += itemTotal;
+
+    return `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-image">
+            <img src="${product.image || product.images[0]}" alt="${product.name}" />
+          </div>
+          <div>
+            <strong>${product.name}</strong>
+            <div class="item-variations">
+              ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
+              ${item.color ? `<span class="item-variation">${item.color}</span>` : ''}
+            </div>
+            <p>R$ ${product.price.toFixed(2)}</p>
+          </div>
+        </div>
+        <div class="cart-controls">
+          <div class="quantity-control">
+            <button class="button small" onclick="updateCartPageQty('${key}', ${item.quantity - 1})">-</button>
+            <span>${item.quantity}</span>
+            <button class="button small" onclick="updateCartPageQty('${key}', ${item.quantity + 1})">+</button>
+          </div>
+          <button class="text-link small cart-remove" onclick="updateCartPageQty('${key}', 0)">Remover</button>
+        </div>
+        <div class="cart-subtotal">
+          R$ ${itemTotal.toFixed(2)}
+        </div>
+      </div>
+    `;
+  }).join('');
+
   cartContent.innerHTML = `
     <div class="cart-table">
       <div class="cart-header">
         <span>Produto</span>
         <span>Quantidade</span>
-        <span>Subtotal</span>
+        <span style="text-align: right;">Subtotal</span>
       </div>
-      ${lineItems
-        .map(
-          ({ product, quantity }) => `
-            <div class="cart-item">
-              <div class="cart-item-info">
-                <div class="cart-image">
-                  ${product.images && product.images.length ? `<img src="${product.images[0]}" alt="${product.name}" />` : '<span>Imagem</span>'}
-                </div>
-                <div>
-                  <strong>${product.name}</strong>
-                  <p>${product.description}</p>
-                </div>
-              </div>
-              <div class="cart-controls">
-                <div class="quantity-control">
-                  <button class="button small" data-id="${product._id}" data-action="decrease">-</button>
-                  <span>${quantity}</span>
-                  <button class="button small" data-id="${product._id}" data-action="increase">+</button>
-                </div>
-                <button class="button secondary cart-remove" data-id="${product._id}">Remover</button>
-              </div>
-              <div class="cart-subtotal">R$ ${(product.price * quantity).toFixed(2)}</div>
-            </div>
-          `
-        )
-        .join('')}
+      ${lineItemsHtml}
     </div>
     <div class="cart-summary">
       <div>
-        <p>Total</p>
-        <strong>R$ ${total.toFixed(2)}</strong>
+        <p>Total do pedido</p>
+        <strong>R$ ${subtotal.toFixed(2)}</strong>
       </div>
       <div class="cart-actions">
+        <a class="button button-outline" href="/products">Continuar comprando</a>
         <button class="button checkout-button">Finalizar compra</button>
-        <a class="button secondary" href="/products">Continuar comprando</a>
       </div>
     </div>
   `;
 }
 
-async function updateQuantity(productId, action) {
-  const cart = getCart();
-  const currentQty = cart[productId] || 0;
-  if (!currentQty) return;
-  const products = await loadProducts();
-  const product = products.find((item) => item._id === productId);
-  if (action === 'increase' && product && currentQty < product.countInStock) {
-    cart[productId] = currentQty + 1;
-  }
-  if (action === 'decrease') {
-    cart[productId] = currentQty - 1;
-    if (cart[productId] <= 0) {
-      delete cart[productId];
-    }
-  }
-  saveCart(cart);
+window.updateCartPageQty = (key, newQty) => {
+  const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+  if (newQty <= 0) delete cart[key];
+  else cart[key].quantity = newQty;
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
   renderCart();
-}
+  syncCart();
+};
 
-function removeItem(productId) {
-  const cart = getCart();
-  delete cart[productId];
-  saveCart(cart);
-  renderCart();
-}
-
-function clearCart() {
-  localStorage.removeItem(CART_KEY);
-  renderCart();
-}
-
-root.addEventListener('click', (event) => {
-  const button = event.target.closest('button');
-  if (!button) return;
-  const productId = button.dataset.id;
-  const action = button.dataset.action;
-
-  if (button.classList.contains('cart-remove')) {
-    removeItem(productId);
-  }
-  if (action) {
-    updateQuantity(productId, action);
-  }
+document.addEventListener('click', async (event) => {
+  const button = event.target;
+  
   if (button.classList.contains('checkout-button')) {
     event.preventDefault();
-    clearCart();
-    const cartContent = document.getElementById('cart-content');
-    cartContent.innerHTML = `
-      <div class="cart-empty">
-        <p>Compra finalizada com sucesso! Seu carrinho foi limpo.</p>
-        <a class="button" href="/products">Continuar comprando</a>
-      </div>
-    `;
+    
+    const token = localStorage.getItem('md-essential-admin-token');
+    if (!token) {
+      alert('Por favor, faça login para finalizar a compra.');
+      window.location.href = '/login';
+      return;
+    }
+
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+    const items = Object.values(cart);
+
+    if (items.length === 0) {
+      alert('Seu carrinho está vazio.');
+      return;
+    }
+
+    button.textContent = 'PROCESSANDO...';
+    button.disabled = true;
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Erro ao processar pedido');
+      }
+
+      localStorage.removeItem(CART_KEY);
+      syncCart();
+      
+      const cartContent = document.getElementById('cart-content');
+      cartContent.innerHTML = `
+        <div class="cart-empty">
+          <i class="fas fa-check-circle" style="font-size: 3rem; color: #2ecc71; margin-bottom: 1rem;"></i>
+          <h2>Pedido Realizado!</h2>
+          <p>Seu pedido <strong>#${data.orderId}</strong> foi registrado com sucesso.</p>
+          <p>Total: R$ ${data.totalPrice.toFixed(2)}</p>
+          <a class="button" href="/products">Continuar comprando</a>
+        </div>
+      `;
+    } catch (err) {
+      alert(err.message);
+      button.textContent = 'Finalizar compra';
+      button.disabled = false;
+    }
   }
 });
 

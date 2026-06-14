@@ -1,18 +1,6 @@
-import { renderNav, renderFooter, renderProductCard, renderCategoryCard } from './ui.js';
+import { renderNav, renderFooter, renderProductCard, renderCategoryCard, initDrawerEvents, updateCartBadge, bindGlobalAddButtons } from './ui.js';
 
 const root = document.getElementById('page-root');
-const categoryPlaceholderImages = [
-  'https://picsum.photos/seed/fitness1/400/500',
-  'https://picsum.photos/seed/fitness2/400/500',
-  'https://picsum.photos/seed/fitness3/400/500',
-  'https://picsum.photos/seed/fitness4/400/500',
-  'https://picsum.photos/seed/fitness5/400/500',
-  'https://picsum.photos/seed/fitness6/400/500',
-  'https://picsum.photos/seed/fitness7/400/500',
-  'https://picsum.photos/seed/fitness8/400/500',
-  'https://picsum.photos/seed/fitness9/400/500',
-  'https://picsum.photos/seed/fitness10/400/500',
-];
 
 async function fetchHomeData() {
   const [productRes, categoryRes] = await Promise.all([
@@ -26,6 +14,13 @@ async function fetchHomeData() {
 }
 
 function buildCategoryItems(categories) {
+  const categoryPlaceholderImages = [
+    'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80', // Gym
+    'https://images.unsplash.com/photo-1571731956622-39ed2739cbbb?auto=format&fit=crop&w=800&q=80', // Training
+    'https://images.unsplash.com/photo-1583454110551-21f2fa200181?auto=format&fit=crop&w=800&q=80', // Fitness
+    'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80', // Lifestyle
+  ];
+
   return categories.map((category, index) => ({
     id: encodeURIComponent(category.name),
     title: category.name,
@@ -38,32 +33,53 @@ function render(products, categories) {
   root.innerHTML = `
     ${renderNav('home')}
     <main class="content">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Bem-vindo</p>
-          <h1>MD Essential Fitness</h1>
-          <p>Roupas e acessórios de academia para estilo, conforto e performance.</p>
+      <section class="hero premium-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content-box">
+          <p class="eyebrow">ESTÉTICA & PERFORMANCE</p>
+          <h1>MD ESSENTIAL<br>FITNESS</h1>
+          <p>O uniforme de quem não aceita o comum. Tecidos tecnológicos com modelagem premium.</p>
           <div class="button-row">
-            <a class="button" href="/products">Ver produtos</a>
-            <a class="button secondary" href="/login">Login</a>
+            <a class="button" href="/products">COMPRAR AGORA</a>
+            <a class="button secondary" href="/category">COLEÇÕES</a>
           </div>
         </div>
       </section>
 
-      <section class="section section-grid">
+      <section class="section">
         <div class="container-custom">
-          <h2>Categorias</h2>
+          <h2 class="text-uppercase-bold text-center mb-5">Categorias</h2>
           <div class="grid-list">
             ${buildCategoryItems(categories).map(renderCategoryCard).join('')}
           </div>
         </div>
       </section>
 
-      <section class="section section--alt section-grid">
+      <section class="section section--alt">
         <div class="container-custom">
-          <h2>Produtos em destaque</h2>
+          <h2 class="text-uppercase-bold text-center mb-5">Drops em Destaque</h2>
           <div class="grid-list">
             ${products.slice(0, 6).map(renderProductCard).join('')}
+          </div>
+        </div>
+      </section>
+
+      <section class="benefit-bar">
+        <div class="container-custom benefit-grid">
+          <div class="benefit-card">
+            <i class="fas fa-shipping-fast"></i>
+            <h3>ENVIO RÁPIDO</h3>
+            <p>Despachamos em até 24h úteis.</p>
+          </div>
+          <div class="benefit-card">
+            <i class="fas fa-sync-alt"></i>
+            <h3>TROCA GRÁTIS</h3>
+            <p>Primeira troca por nossa conta.</p>
+          </div>
+          <div class="benefit-card">
+            <i class="fas fa-shield-alt"></i>
+            <h3>COMPRA SEGURA</h3>
+            <p>Ambiente 100% criptografado.</p>
           </div>
         </div>
       </section>
@@ -71,40 +87,9 @@ function render(products, categories) {
     ${renderFooter()}
   `;
 
-  bindAddCartButtons();
-}
-
-function getCart() {
-  return JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-}
-
-function saveCart(cart) {
-  localStorage.setItem('md-essential-cart', JSON.stringify(cart));
-}
-
-function addToCart(productId, stock) {
-  const cart = getCart();
-  const currentQty = cart[productId] || 0;
-  if (currentQty >= stock) {
-    alert('Limite de estoque atingido para este produto.');
-    return;
-  }
-  cart[productId] = currentQty + 1;
-  saveCart(cart);
-}
-
-function bindAddCartButtons() {
-  document.querySelectorAll('.add-to-cart-button').forEach((button) => {
-    button.addEventListener('click', () => {
-      const productId = button.dataset.id;
-      const stock = parseInt(button.dataset.stock, 10);
-      addToCart(productId, stock);
-      button.textContent = 'Adicionado!';
-      setTimeout(() => {
-        button.textContent = 'Adicionar ao carrinho';
-      }, 1200);
-    });
-  });
+  initDrawerEvents();
+  updateCartBadge();
+  bindGlobalAddButtons();
 }
 
 async function init() {

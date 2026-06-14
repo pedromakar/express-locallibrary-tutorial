@@ -71,25 +71,31 @@ function isDbConnected() {
 
 exports.getProducts = async (req, res) => {
   try {
+    const { category, search } = req.query;
+
     if (!isDbConnected()) {
-      const filter = req.query.category;
-      const data = filter
-        ? fallbackProducts.filter((p) => p.category === filter)
-        : fallbackProducts;
+      let data = fallbackProducts;
+      if (category) data = data.filter((p) => p.category === category);
+      if (search) data = data.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
       return res.json(data);
     }
+
     const filter = {};
-    if (req.query.category) {
-      filter.category = req.query.category;
+    if (category) {
+      filter.category = category;
     }
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' };
+    }
+
     const products = await Product.find(filter).lean();
     res.json(products);
   } catch (err) {
-    // If DB query fails, return fallback data
-    const filter = req.query.category;
-    const data = filter
-      ? fallbackProducts.filter((p) => p.category === filter)
-      : fallbackProducts;
+    // If DB query fails, return filtered fallback data
+    const { category, search } = req.query;
+    let data = fallbackProducts;
+    if (category) data = data.filter((p) => p.category === category);
+    if (search) data = data.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
     res.json(data);
   }
 };

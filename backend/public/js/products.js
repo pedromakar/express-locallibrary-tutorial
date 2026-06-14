@@ -1,59 +1,32 @@
-import { renderNav, renderFooter, renderProductCard } from './ui.js';
+import { renderNav, renderFooter, renderProductCard, initDrawerEvents, updateCartBadge, bindGlobalAddButtons } from './ui.js';
 
 const root = document.getElementById('page-root');
 
-function getCart() {
-  return JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-}
-
-function saveCart(cart) {
-  localStorage.setItem('md-essential-cart', JSON.stringify(cart));
-}
-
-function addToCart(productId, stock) {
-  const cart = getCart();
-  const currentQty = cart[productId] || 0;
-  if (currentQty >= stock) {
-    alert('Limite de estoque atingido para este produto.');
-    return;
-  }
-  cart[productId] = currentQty + 1;
-  saveCart(cart);
-}
-
-function bindAddCartButtons() {
-  document.querySelectorAll('.add-to-cart-button').forEach((button) => {
-    button.addEventListener('click', () => {
-      const productId = button.dataset.id;
-      const stock = parseInt(button.dataset.stock, 10);
-      addToCart(productId, stock);
-      button.textContent = 'Adicionado!';
-      setTimeout(() => {
-        button.textContent = 'Adicionar ao carrinho';
-      }, 1200);
-    });
-  });
-}
-
 async function renderProducts() {
-  const response = await fetch('/api/products');
+  const params = new URLSearchParams(window.location.search);
+  const searchQuery = params.get('search');
+  
+  const url = searchQuery ? `/api/products?search=${encodeURIComponent(searchQuery)}` : '/api/products';
+  const response = await fetch(url);
   const products = response.ok ? await response.json() : [];
 
   root.innerHTML = `
     ${renderNav('products')}
     <main class="content">
       <section class="box">
-        <h1>Todos os produtos</h1>
-        <p>Explore nossa coleção completa de roupas e acessórios de treino.</p>
+        <h1>${searchQuery ? `Resultados para "${searchQuery}"` : 'Todos os produtos'}</h1>
+        <p>${searchQuery ? `Encontramos ${products.length} produto(s).` : 'Explore nossa coleção completa de roupas e acessórios de treino.'}</p>
         <div class="grid-list">
-          ${products.map(renderProductCard).join('')}
+          ${products.length > 0 ? products.map(renderProductCard).join('') : '<p class="text-center py-5">Nenhum produto encontrado.</p>'}
         </div>
       </section>
     </main>
     ${renderFooter()}
   `;
 
-  bindAddCartButtons();
+  initDrawerEvents();
+  updateCartBadge();
+  bindGlobalAddButtons();
 }
 
 renderProducts();
