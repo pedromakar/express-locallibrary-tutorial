@@ -1,4 +1,4 @@
-import { renderNav, renderFooter, syncCart } from './ui.js';
+import { renderNav, renderFooter, syncCart, initDrawerEvents, updateCartBadge, getSafeCart } from './ui.js?v=2';
 
 const CART_KEY = 'md-essential-cart';
 const root = document.getElementById('page-root');
@@ -14,16 +14,23 @@ root.innerHTML = `
   ${renderFooter()}
 `;
 
+initDrawerEvents();
+updateCartBadge();
+
 async function renderCart() {
   const cartContent = document.getElementById('cart-content');
-  const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+  
+  // Always read from localStorage (single source of truth on frontend)
+  const cart = getSafeCart();
   const cartKeys = Object.keys(cart);
 
   if (cartKeys.length === 0) {
     cartContent.innerHTML = `
       <div class="cart-empty">
-        <p>Seu carrinho está vazio.</p>
-        <a class="button" href="/products">Ver produtos</a>
+        <i class="fas fa-shopping-bag" style="font-size: 3rem; color: var(--color-text-muted); margin-bottom: 1rem;"></i>
+        <p>Seu carrinho está vazio no momento!</p>
+        <p>Você pode conferir todos os produtos disponíveis e comprar alguns na loja.</p>
+        <a class="button" href="/products">Continuar Comprando</a>
       </div>
     `;
     return;
@@ -49,20 +56,20 @@ async function renderCart() {
           </div>
           <div>
             <strong>${product.name}</strong>
+            <p>R$ ${product.price.toFixed(2)}</p>
             <div class="item-variations">
               ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
               ${item.color ? `<span class="item-variation">${item.color}</span>` : ''}
             </div>
-            <p>R$ ${product.price.toFixed(2)}</p>
           </div>
         </div>
         <div class="cart-controls">
           <div class="quantity-control">
-            <button class="button small" onclick="updateCartPageQty('${key}', ${item.quantity - 1})">-</button>
+            <button class="button small" data-action="decrease" data-key="${key}" data-stock="${product.countInStock}">-</button>
             <span>${item.quantity}</span>
-            <button class="button small" onclick="updateCartPageQty('${key}', ${item.quantity + 1})">+</button>
+            <button class="button small" data-action="increase" data-key="${key}" data-stock="${product.countInStock}">+</button>
           </div>
-          <button class="text-link small cart-remove" onclick="updateCartPageQty('${key}', 0)">Remover</button>
+          <button class="text-link small cart-remove" data-action="remove" data-key="${key}" data-stock="${product.countInStock}">Remover</button>
         </div>
         <div class="cart-subtotal">
           R$ ${itemTotal.toFixed(2)}
@@ -87,80 +94,58 @@ async function renderCart() {
       </div>
       <div class="cart-actions">
         <a class="button button-outline" href="/products">Continuar comprando</a>
-        <button class="button checkout-button">Finalizar compra</button>
+        <a class="button checkout-button" href="/checkout">Finalizar compra</a>
       </div>
     </div>
   `;
 }
 
-window.updateCartPageQty = (key, newQty) => {
-  const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+window.updateCartPageQty = (key, newQty, stock) => {
+  console.log('window.updateCartPageQty called with:', key, newQty, stock);
+  const cart = getSafeCart();
+  console.log('Current cart on page in localStorage:', cart);
   if (newQty <= 0) delete cart[key];
-  else cart[key].quantity = newQty;
+  else {
+    if (cart[key]) {
+      if (stock !== undefined && newQty > stock) {
+        alert('Limite de estoque atingido para este produto.');
+        return;
+      }
+      cart[key].quantity = newQty;
+    } else {
+      console.warn('Key not found in page cart:', key);
+    }
+  }
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  renderCart();
+  console.log('Updated cart on page in localStorage:', localStorage.getItem(CART_KEY));
   syncCart();
 };
 
-document.addEventListener('click', async (event) => {
-  const button = event.target;
-  
-  if (button.classList.contains('checkout-button')) {
-    event.preventDefault();
-    
-    const token = localStorage.getItem('md-essential-admin-token');
-    if (!token) {
-      alert('Por favor, faça login para finalizar a compra.');
-      window.location.href = '/login';
-      return;
-    }
+const cartContentElement = document.getElementById('cart-content');
+cartContentElement?.addEventListener('click', async (e) => {
+  const button = e.target.closest('[data-action]');
+  if (!button) return;
 
-    const cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
-    const items = Object.values(cart);
+  e.preventDefault();
+  const action = button.dataset.action;
+  const key = button.dataset.key;
+  const stock = button.dataset.stock ? parseInt(button.dataset.stock, 10) : undefined;
 
-    if (items.length === 0) {
-      alert('Seu carrinho está vazio.');
-      return;
-    }
+  const cart = getSafeCart();
+  if (!cart[key]) return;
 
-    button.textContent = 'PROCESSANDO...';
-    button.disabled = true;
-
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ items })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Erro ao processar pedido');
-      }
-
-      localStorage.removeItem(CART_KEY);
-      syncCart();
-      
-      const cartContent = document.getElementById('cart-content');
-      cartContent.innerHTML = `
-        <div class="cart-empty">
-          <i class="fas fa-check-circle" style="font-size: 3rem; color: #2ecc71; margin-bottom: 1rem;"></i>
-          <h2>Pedido Realizado!</h2>
-          <p>Seu pedido <strong>#${data.orderId}</strong> foi registrado com sucesso.</p>
-          <p>Total: R$ ${data.totalPrice.toFixed(2)}</p>
-          <a class="button" href="/products">Continuar comprando</a>
-        </div>
-      `;
-    } catch (err) {
-      alert(err.message);
-      button.textContent = 'Finalizar compra';
-      button.disabled = false;
-    }
+  let newQty = cart[key].quantity;
+  if (action === 'increase') {
+    newQty += 1;
+  } else if (action === 'decrease') {
+    newQty -= 1;
+  } else if (action === 'remove') {
+    newQty = 0;
   }
+
+  await window.updateCartPageQty(key, newQty, stock);
 });
+
+window.refreshCartPage = renderCart;
 
 renderCart();

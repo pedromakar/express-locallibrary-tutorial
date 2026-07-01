@@ -9,6 +9,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -18,10 +19,12 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Set security HTTP headers
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 
 // Compress all routes
 app.use(compression());
@@ -40,6 +43,7 @@ connectDB();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api', orderRoutes);
 
 app.get('/', (req, res) => {
@@ -78,9 +82,13 @@ app.get('/cart', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'cart.html'));
 });
 
+app.get('/checkout', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'checkout.html'));
+});
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'admin.html'));
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT} - dev`));

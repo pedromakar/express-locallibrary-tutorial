@@ -1,4 +1,4 @@
-import { renderNav, renderFooter, renderProductCard, renderCategoryCard, initDrawerEvents, updateCartBadge, bindGlobalAddButtons } from './ui.js';
+import { renderNav, renderFooter, renderProductCard, renderCategoryCard, initDrawerEvents, updateCartBadge, bindGlobalAddButtons } from './ui.js?v=2';
 
 const root = document.getElementById('page-root');
 const params = new URLSearchParams(window.location.search);

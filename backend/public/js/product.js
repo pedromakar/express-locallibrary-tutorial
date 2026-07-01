@@ -1,4 +1,4 @@
-import { renderNav, renderFooter, initDrawerEvents, updateCartBadge, syncCart, addToCart } from './ui.js';
+import { renderNav, renderFooter, initDrawerEvents, updateCartBadge, syncCart, addToCart } from './ui.js?v=2';
 
 const root = document.getElementById('page-root');
 const params = new URLSearchParams(window.location.search);
@@ -6,6 +6,7 @@ const productId = params.get('id');
 
 let selectedSize = null;
 let selectedColor = null;
+let selectedQty = 1;
 
 async function renderProduct() {
   const response = await fetch(`/api/products/${productId}`);
@@ -49,6 +50,9 @@ async function renderProduct() {
             <p class="category-eyebrow">${product.category}</p>
             <h1 class="text-uppercase-bold">${product.name}</h1>
             <p class="price-premium">R$ ${product.price.toFixed(2)}</p>
+            <p class="stock-status" style="font-size: 0.85rem; font-weight: 700; color: ${product.countInStock > 0 ? '#22c55e' : '#ef4444'}; margin-top: -8px; margin-bottom: 16px;">
+              ${product.countInStock > 0 ? `<i class="fas fa-check"></i> Disponível em estoque (${product.countInStock} unidades)` : '<i class="fas fa-times-circle"></i> Esgotado'}
+            </p>
             
             <div class="divider"></div>
 
@@ -84,6 +88,16 @@ async function renderProduct() {
               </div>
             ` : ''}
 
+            <!-- Quantity Selector -->
+            <div class="selector-box">
+              <label class="selector-label">QUANTIDADE</label>
+              <div class="qty-selector">
+                <button class="qty-selector-btn" id="qty-minus">−</button>
+                <span class="qty-selector-value" id="qty-value">1</span>
+                <button class="qty-selector-btn" id="qty-plus">+</button>
+              </div>
+            </div>
+
             <!-- Benefits -->
             <div class="benefits-premium">
               ${product.benefits.map(b => `
@@ -94,9 +108,20 @@ async function renderProduct() {
               `).join('')}
             </div>
 
-            <button class="button w-100 mt-4" id="add-to-cart-premium">
-              ADICIONAR AO CARRINHO
-            </button>
+            <div class="product-buy-actions">
+              ${product.countInStock > 0 ? `
+                <button class="button w-100" id="add-to-cart-premium">
+                  <i class="fas fa-shopping-cart"></i> ADICIONAR AO CARRINHO
+                </button>
+                <button class="button button-accent w-100" id="buy-now-btn">
+                  <i class="fas fa-bolt"></i> COMPRAR AGORA
+                </button>
+              ` : `
+                <button class="button w-100" disabled style="background-color: #6b7280; cursor: not-allowed; opacity: 0.6;">
+                  <i class="fas fa-times-circle"></i> PRODUTO INDISPONÍVEL
+                </button>
+              `}
+            </div>
 
             <div class="shipping-preview">
               <i class="fas fa-truck"></i>
@@ -157,6 +182,21 @@ function setupEventListeners(product) {
     });
   });
 
+  // Quantity Selection
+  const qtyValue = document.getElementById('qty-value');
+  document.getElementById('qty-minus')?.addEventListener('click', () => {
+    if (selectedQty > 1) {
+      selectedQty--;
+      qtyValue.textContent = selectedQty;
+    }
+  });
+  document.getElementById('qty-plus')?.addEventListener('click', () => {
+    if (selectedQty < product.countInStock) {
+      selectedQty++;
+      qtyValue.textContent = selectedQty;
+    }
+  });
+
   // Modal Logic
   const modal = document.getElementById('measurements-modal');
   document.getElementById('open-measurements')?.addEventListener('click', () => modal.classList.add('open'));
@@ -165,12 +205,36 @@ function setupEventListeners(product) {
 
   // Add to Cart Logic
   document.getElementById('add-to-cart-premium')?.addEventListener('click', (e) => {
-    const btn = e.target;
-    addToCart(product._id, product.countInStock, selectedSize, selectedColor);
+    const btn = e.target.closest('button');
+    if (!validateSelection(product)) return;
     
-    btn.textContent = 'ADICIONADO!';
-    setTimeout(() => btn.textContent = 'ADICIONAR AO CARRINHO', 1500);
+    addToCart(product._id, product.countInStock, selectedSize, selectedColor, selectedQty);
+    
+    btn.innerHTML = '<i class="fas fa-check"></i> ADICIONADO!';
+    setTimeout(() => btn.innerHTML = '<i class="fas fa-shopping-cart"></i> ADICIONAR AO CARRINHO', 1500);
   });
+
+  // Buy Now Logic
+  document.getElementById('buy-now-btn')?.addEventListener('click', () => {
+    if (!validateSelection(product)) return;
+    
+    const added = addToCart(product._id, product.countInStock, selectedSize, selectedColor, selectedQty, false);
+    if (added) {
+      window.location.href = '/checkout';
+    }
+  });
+}
+
+function validateSelection(product) {
+  if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+    alert('Por favor, selecione um tamanho.');
+    return false;
+  }
+  if (product.colors && product.colors.length > 0 && !selectedColor) {
+    alert('Por favor, selecione uma cor.');
+    return false;
+  }
+  return true;
 }
 
 renderProduct();

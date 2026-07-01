@@ -1,4 +1,4 @@
-import { renderNav, renderFooter, initDrawerEvents, updateCartBadge } from './ui.js';
+import { renderNav, renderFooter, initDrawerEvents, updateCartBadge } from './ui.js?v=2';
 
 const root = document.getElementById('page-root');
 const token = localStorage.getItem('md-essential-admin-token');
@@ -93,6 +93,13 @@ function renderAdminPage() {
         <h2>Gestão de Pedidos</h2>
         <div id="admin-orders-list" class="orders-list">
           <p class="text-center py-4">Carregando pedidos...</p>
+        </div>
+      </section>
+
+      <section class="box" id="admin-users-section">
+        <h2>Gestão de Clientes</h2>
+        <div id="admin-users-list" class="table-responsive">
+          <p class="text-center py-4">Carregando clientes...</p>
         </div>
       </section>
 
@@ -199,7 +206,8 @@ async function fetchProducts() {
     renderAdminProducts(products);
     renderAdminDashboard(products);
     populateCategorySelect(products);
-    fetchOrders(); // Also fetch orders
+    fetchOrders(); 
+    fetchUsers(); // Also fetch users
   } catch (error) {
     adminProductsList.innerHTML = '<p>Erro ao carregar produtos.</p>';
   }
@@ -216,6 +224,48 @@ async function fetchOrders() {
   } catch (error) {
     ordersList.innerHTML = '<p>Erro ao carregar pedidos.</p>';
   }
+}
+
+async function fetchUsers() {
+  const usersList = document.getElementById('admin-users-list');
+  try {
+    const response = await fetch('/api/users', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const users = await response.json();
+    renderAdminUsers(users);
+  } catch (error) {
+    usersList.innerHTML = '<p>Erro ao carregar clientes.</p>';
+  }
+}
+
+function renderAdminUsers(users) {
+  const usersList = document.getElementById('admin-users-list');
+  if (!users || users.length === 0) {
+    usersList.innerHTML = '<p class="text-center py-4">Nenhum cliente encontrado.</p>';
+    return;
+  }
+
+  usersList.innerHTML = `
+    <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--color-border); text-align: left;">
+          <th class="py-3">USUÁRIO</th>
+          <th class="py-3">EMAIL</th>
+          <th class="py-3">ROLE</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(user => `
+          <tr style="border-bottom: 1px solid var(--color-border);">
+            <td class="py-3">${user.username}</td>
+            <td class="py-3">${user.email}</td>
+            <td class="py-3">${user.role}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderAdminOrders(orders) {

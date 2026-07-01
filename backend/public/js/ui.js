@@ -41,16 +41,7 @@ export function renderNav(activePage) {
 
     <!-- Mobile Menu Drawer (initial structure) -->
     <div class="mobile-menu-drawer" id="mobile-menu-drawer">
-      <div class="drawer-header">
-        <h2 class="text-uppercase-bold">MENU</h2>
-        <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
-      </div>
       <nav class="mobile-nav-links">
-        <a href="/products" class="nav-link">PRODUTOS</a>
-        <a href="/category" class="nav-link">COLEÇÕES</a>
-        <a href="/search" class="nav-link">BUSCA</a>
-        ${token ? `<a href="/account" class="nav-link">MINHA CONTA</a>` : `<button id="mobile-login-toggle" class="nav-link button-as-link">LOGIN / CADASTRAR</button>`}
-        <a href="/wishlist" class="nav-link">LISTA DE DESEJOS</a>
       </nav>
     </div>
     
@@ -143,9 +134,23 @@ export function renderNav(activePage) {
   `;
 }
 
+export function getSafeCart() {
+  try {
+    const raw = localStorage.getItem('md-essential-cart');
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch (e) {
+    console.error('Erro ao fazer parse do carrinho no localStorage:', e);
+  }
+  return {};
+}
+
 export function updateCartBadge() {
-  const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-  const count = Object.values(cart).reduce((sum, q) => sum + q, 0);
+  const cart = getSafeCart();
+  const count = Object.values(cart).reduce((sum, item) => sum + (item && typeof item === 'object' ? item.quantity : 0), 0);
   const badge = document.getElementById('cart-count-badge');
   if (badge) {
     badge.textContent = count;
@@ -156,7 +161,7 @@ export function updateCartBadge() {
 async function renderDrawerItems() {
   const container = document.getElementById('drawer-items');
   if (!container) return;
-  const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
+  const cart = getSafeCart();
   const cartKeys = Object.keys(cart);
 
   if (cartKeys.length === 0) {
@@ -174,6 +179,7 @@ async function renderDrawerItems() {
   let subtotal = 0;
   container.innerHTML = cartKeys.map(key => {
     const item = cart[key];
+    if (!item) return '';
     const product = allProducts.find(p => p._id === item.productId);
     if (!product) return '';
 
@@ -186,7 +192,7 @@ async function renderDrawerItems() {
         <div>
           <div class="d-flex justify-content-between">
             <h3 class="text-uppercase-bold" style="font-size: 0.7rem;">${product.name}</h3>
-            <button onclick="updateQty('${key}', 0)" style="background:none; border:none; cursor:pointer;">&times;</button>
+            <button class="drawer-remove-btn" data-action="remove" data-key="${key}" style="background:none; border:none; cursor:pointer;">&times;</button>
           </div>
           <div class="item-variations">
             ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
@@ -194,9 +200,9 @@ async function renderDrawerItems() {
           </div>
           <span style="font-size: 0.75rem;">R$ ${product.price.toFixed(2)}</span>
           <div class="drawer-qty-control">
-            <button class="drawer-qty-btn" onclick="updateQty('${key}', ${qty - 1})">-</button>
+            <button class="drawer-qty-btn" data-action="decrease" data-key="${key}" data-stock="${product.countInStock}">-</button>
             <span style="font-size: 0.8rem;">${qty}</span>
-            <button class="drawer-qty-btn" onclick="updateQty('${key}', ${qty + 1})">+</button>
+            <button class="drawer-qty-btn" data-action="increase" data-key="${key}" data-stock="${product.countInStock}">+</button>
           </div>
         </div>
       </div>
@@ -209,36 +215,110 @@ async function renderDrawerItems() {
   document.getElementById('shipping-msg').textContent = subtotal >= 198 ? 'VOCÊ GANHOU FRETE GRÁTIS!' : `Faltam R$ ${(198 - subtotal).toFixed(2)} para FRETE GRÁTIS`;
 }
 
-window.updateQty = async (key, newQty) => {
-  const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
+window.updateQty = async (key, newQty, stock) => {
+  console.log('window.updateQty called with:', key, newQty, stock);
+  const cart = getSafeCart();
+  console.log('Current cart in localStorage:', cart);
   if (newQty <= 0) delete cart[key]; 
-  else cart[key].quantity = newQty;
+  else {
+    if (cart[key]) {
+      if (stock !== undefined && newQty > stock) {
+        alert('Limite de estoque atingido para este produto.');
+        return;
+      }
+      cart[key].quantity = newQty;
+    } else {
+      console.warn('Key not found in cart:', key);
+    }
+  }
   
   localStorage.setItem('md-essential-cart', JSON.stringify(cart));
+  console.log('Updated cart in localStorage:', localStorage.getItem('md-essential-cart'));
   await syncCart();
 };
 
 export async function syncCart() {
+  const token = localStorage.getItem('md-essential-admin-token');
+  const cart = getSafeCart();
+  
+  if (token) {
+    const formattedCart = Object.entries(cart).map(([key, item]) => ({
+      product: item.productId,
+      quantity: item.quantity,
+      size: item.size || null,
+      color: item.color || null
+    }));
+    
+    try {
+      await fetch('/api/users/cart', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ cart: formattedCart })
+      });
+    } catch (err) {
+      console.error('Erro ao sincronizar carrinho:', err);
+    }
+  }
+  
   updateCartBadge();
   await renderDrawerItems();
+
+  if (typeof window.refreshCartPage === 'function') {
+    window.refreshCartPage();
+  }
 }
 
-export function addToCart(productId, stock, size = null, color = null) {
-  const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
+export async function loadCartFromServer() {
+  const token = localStorage.getItem('md-essential-admin-token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/users/cart', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const cartItems = await res.json();
+      const cart = {};
+      cartItems.forEach(item => {
+        const productId = typeof item.product === 'object' ? item.product._id : item.product;
+        const key = `${productId}${item.size ? `_${item.size}` : ''}${item.color ? `_${item.color}` : ''}`;
+        cart[key] = {
+          productId,
+          quantity: item.quantity,
+          size: item.size || null,
+          color: item.color || null
+        };
+      });
+      localStorage.setItem('md-essential-cart', JSON.stringify(cart));
+      updateCartBadge();
+    }
+  } catch (err) {
+    console.error('Erro ao carregar carrinho do servidor:', err);
+  }
+}
+
+// Inicializa o carrinho ao carregar o script
+loadCartFromServer();
+
+export function addToCart(productId, stock, size = null, color = null, quantity = 1, openDrawer = true) {
+  const cart = getSafeCart();
   
   // Unique key for combinations: productId_size_color
   const cartKey = `${productId}${size ? `_${size}` : ''}${color ? `_${color}` : ''}`;
   
   const currentQty = cart[cartKey] ? cart[cartKey].quantity : 0;
   
-  if (currentQty >= stock) {
+  if (currentQty + quantity > stock) {
     alert('Limite de estoque atingido para este produto.');
-    return;
+    return false;
   }
 
   cart[cartKey] = {
     productId,
-    quantity: currentQty + 1,
+    quantity: currentQty + quantity,
     size,
     color
   };
@@ -246,7 +326,8 @@ export function addToCart(productId, stock, size = null, color = null) {
   localStorage.setItem('md-essential-cart', JSON.stringify(cart));
   
   syncCart();
-  window.toggleCartDrawer(true);
+  if (openDrawer) window.toggleCartDrawer(true);
+  return true;
 }
 
 export function bindGlobalAddButtons() {
@@ -335,6 +416,31 @@ export function initDrawerEvents() {
 
   document.querySelectorAll('.close-drawers').forEach(btn => btn.addEventListener('click', closeAllDrawers));
   globalOverlay?.addEventListener('click', closeAllDrawers);
+
+  // Event delegation for cart drawer item quantity controls and removal
+  cartDrawer?.addEventListener('click', async (e) => {
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+    
+    e.preventDefault();
+    const action = button.dataset.action;
+    const key = button.dataset.key;
+    const stock = button.dataset.stock ? parseInt(button.dataset.stock, 10) : undefined;
+    
+    const cart = getSafeCart();
+    if (!cart[key]) return;
+    
+    let newQty = cart[key].quantity;
+    if (action === 'increase') {
+      newQty += 1;
+    } else if (action === 'decrease') {
+      newQty -= 1;
+    } else if (action === 'remove') {
+      newQty = 0;
+    }
+    
+    await window.updateQty(key, newQty, stock);
+  });
 
   // Global Search Functionality
   const searchForm = document.getElementById('global-search-form');
@@ -428,63 +534,14 @@ export function initDrawerEvents() {
     } catch (err) { msg.textContent = 'Erro ao conectar.'; }
   });
 
-  document.getElementById('drawer-checkout')?.addEventListener('click', async () => {
-    const token = localStorage.getItem('md-essential-admin-token');
-    if (!token) {
-      alert('Por favor, faça login para finalizar a compra.');
-      toggleLoginDrawer(true);
-      return;
-    }
-
+  document.getElementById('drawer-checkout')?.addEventListener('click', () => {
     const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
-    const items = Object.entries(cart).map(([productId, quantity]) => ({
-      productId,
-      quantity
-    }));
-
-    if (items.length === 0) {
+    if (Object.keys(cart).length === 0) {
       alert('Seu carrinho está vazio.');
       return;
     }
-
-    const btn = document.getElementById('drawer-checkout');
-    const originalText = btn.textContent;
-    btn.textContent = 'PROCESSANDO...';
-    btn.disabled = true;
-
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ items })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Erro ao processar pedido');
-      }
-
-      localStorage.removeItem('md-essential-cart');
-      const container = document.getElementById('drawer-items');
-      container.innerHTML = `
-        <div class="text-center py-5">
-          <i class="fas fa-check-circle" style="font-size: 2rem; color: #2ecc71;"></i>
-          <p class="mt-2">Pedido <strong>#${data.orderId}</strong> realizado!</p>
-          <a href="/products" class="button small mt-2">Continuar</a>
-        </div>
-      `;
-      btn.style.display = 'none';
-      document.getElementById('drawer-subtotal').textContent = 'R$ 0,00';
-      updateCartBadge();
-    } catch (err) {
-      alert(err.message);
-      btn.textContent = originalText;
-      btn.disabled = false;
-    }
+    closeAllDrawers();
+    window.location.href = '/checkout';
   });
 }
 
