@@ -11,4 +11,7 @@ router.delete('/:id', auth, admin, userController.deleteUser);
 router.get('/cart', auth, userController.getCart);
 router.post('/cart', auth, userController.updateCart);
 
+router.get('/profile', auth, userController.getProfile);
+router.put('/profile', auth, userController.updateProfile);
+
 module.exports = router;

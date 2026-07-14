@@ -1,28 +1,148 @@
 export function renderNav(activePage) {
   const token = localStorage.getItem('md-essential-admin-token');
+
+  const megaMenuData = {
+    masculino: {
+      columns: [
+        { title: 'ROUPAS', links: [
+          { label: 'Regatas', href: '/products?category=Regatas' },
+          { label: 'Camisetas', href: '/products?category=Camisetas' },
+          { label: 'Shorts', href: '/products?category=Shorts' },
+          { label: 'Calças', href: '/products?category=Calças' },
+          { label: 'Moletons', href: '/products?category=Moletom' },
+        ]},
+        { title: 'COLEÇÕES', links: [
+          { label: 'Heavy', href: '/category.html?id=Heavy' },
+          { label: 'Performance', href: '/category.html?id=Performance' },
+          { label: 'Casual', href: '/category.html?id=Casual' },
+          { label: 'Inverno', href: '/category.html?id=Moletom' },
+        ]},
+        { title: 'DESTAQUES', links: [
+          { label: 'Mais vendidos', href: '/products' },
+          { label: 'Promoções', href: '/products' },
+          { label: 'Lançamentos', href: '/products' },
+          { label: 'Novidades', href: '/products' },
+        ]},
+      ],
+      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80',
+      viewAllLabel: 'Ver tudo em Masculino',
+      viewAllHref: '/products',
+    },
+    feminino: {
+      columns: [
+        { title: 'ROUPAS', links: [
+          { label: 'Leggings', href: '/products?category=Leggings' },
+          { label: 'Tops', href: '/products?category=Tops' },
+          { label: 'Croppeds', href: '/products?category=Croppeds' },
+          { label: 'Shorts', href: '/products?category=Shorts' },
+        ]},
+        { title: 'COLEÇÕES', links: [
+          { label: 'Alpha Cut', href: '/category.html?id=AlphaCut' },
+          { label: 'CoreFlex', href: '/category.html?id=CoreFlex' },
+          { label: 'Performance', href: '/category.html?id=Performance' },
+        ]},
+        { title: 'DESTAQUES', links: [
+          { label: 'Mais vendidos', href: '/products' },
+          { label: 'Promoções', href: '/products' },
+          { label: 'Lançamentos', href: '/products' },
+        ]},
+      ],
+      image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+      viewAllLabel: 'Ver tudo em Feminino',
+      viewAllHref: '/products',
+    },
+    colecoes: {
+      columns: [
+        { title: 'DROPS', links: [
+          { label: 'Drop 01', href: '/products' },
+          { label: 'Drop 02', href: '/products' },
+          { label: 'Drop 03', href: '/products' },
+        ]},
+        { title: 'LINHAS', links: [
+          { label: 'Performance', href: '/category.html?id=Performance' },
+          { label: 'Heavy', href: '/category.html?id=Heavy' },
+          { label: 'Casual', href: '/category.html?id=Casual' },
+        ]},
+        { title: 'ESPECIAL', links: [
+          { label: 'Inverno', href: '/category.html?id=Moletom' },
+          { label: 'Verão', href: '/products' },
+          { label: 'Kits', href: '/category.html?id=Kits' },
+        ]},
+      ],
+      image: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=600&q=80',
+      viewAllLabel: 'Ver todas as Coleções',
+      viewAllHref: '/category',
+    },
+    acessorios: {
+      columns: [
+        { title: 'TIPOS', links: [
+          { label: 'Bonés', href: '/products?category=Bonés' },
+          { label: 'Meias', href: '/products?category=Meias' },
+          { label: 'Luvas', href: '/products?category=Luvas' },
+          { label: 'Mochilas', href: '/products?category=Mochilas' },
+        ]},
+        { title: 'DESTAQUES', links: [
+          { label: 'Mais vendidos', href: '/products' },
+          { label: 'Novidades', href: '/products' },
+          { label: 'Kits', href: '/category.html?id=Kits' },
+        ]},
+        { title: '', links: [] },
+      ],
+      image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&w=600&q=80',
+      viewAllLabel: 'Ver todos os Acessórios',
+      viewAllHref: '/products',
+    },
+  };
+
+  function renderMegaPanel(key, data) {
+    return `
+      <div class="mega-menu-container" id="mega-${key}" data-menu="${key}">
+        <div class="mega-menu-inner">
+          ${data.columns.map(col => col.title ? `
+            <div class="mega-menu-column">
+              <h4>${col.title}</h4>
+              ${col.links.map(l => `<a href="${l.href}">${l.label}</a>`).join('')}
+            </div>
+          ` : '<div class="mega-menu-column"></div>').join('')}
+          <div class="mega-menu-image">
+            <img src="${data.image}" alt="${key}" loading="lazy" />
+          </div>
+          <div class="mega-menu-footer">
+            <a href="${data.viewAllHref}">${data.viewAllLabel} →</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   return `
-    <div class="announcement-bar">
-      <p>10% DE CASHBACK EM TODAS AS COMPRAS!</p>
+    <!-- Announcement Bar -->
+    <div class="announcement-bar" id="announcement-bar">
+      <p>FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK NA PRIMEIRA COMPRA</p>
     </div>
-    <header class="app-header">
-      <div class="container-custom header-content">
+
+    <!-- Header -->
+    <header class="app-header" id="app-header">
+      <div class="container header-content">
         <!-- Mobile Menu Toggle -->
         <button id="mobile-menu-toggle" class="icon-button mobile-only">
           <i class="fas fa-bars"></i>
         </button>
 
-        <!-- Main Menu to the Left -->
+        <!-- Main Navigation (Desktop) -->
         <nav class="main-nav desktop-only">
-          <a href="/products" class="nav-link ${activePage === 'products' ? 'active' : ''}">PRODUTOS</a>
-          <a href="/category" class="nav-link ${activePage === 'category' ? 'active' : ''}">COLEÇÕES</a>
+          <a class="nav-link" data-mega="masculino" href="/products">Masculino</a>
+          <a class="nav-link" data-mega="feminino" href="/products">Feminino</a>
+          <a class="nav-link" data-mega="colecoes" href="/category">Coleções</a>
+          <a class="nav-link" data-mega="acessorios" href="/products">Acessórios</a>
         </nav>
 
-        <!-- Logo Centralized -->
+        <!-- Logo (Centered) -->
         <div class="brand-link">
           <a href="/">MD ESSENTIAL</a>
         </div>
 
-        <!-- Search, Account, Cart to the Right -->
+        <!-- Utility Icons -->
         <div class="nav-utility">
           <button id="search-toggle" class="icon-button"><i class="fas fa-search"></i></button>
           ${token ? `
@@ -30,54 +150,72 @@ export function renderNav(activePage) {
           ` : `
             <button id="login-drawer-toggle" class="icon-button"><i class="fas fa-user"></i></button>
           `}
-          <button id="wishlist-toggle" class="icon-button"><i class="fas fa-heart"></i></button>
-          <button id="cart-drawer-toggle" class="icon-button position-relative">
-            <i class="fas fa-shopping-cart"></i>
+          <button id="cart-drawer-toggle" class="icon-button">
+            <i class="fas fa-shopping-bag"></i>
             <span id="cart-count-badge" class="badge-count" style="display: none;">0</span>
           </button>
         </div>
       </div>
+
+      <!-- Mega Menu Panels -->
+      ${Object.entries(megaMenuData).map(([key, data]) => renderMegaPanel(key, data)).join('')}
     </header>
 
-    <!-- Mobile Menu Drawer (initial structure) -->
+    <!-- Mega Menu Overlay -->
+    <div class="mega-menu-overlay" id="mega-menu-overlay"></div>
+
+    <!-- Mobile Menu Drawer -->
     <div class="mobile-menu-drawer" id="mobile-menu-drawer">
-      <nav class="mobile-nav-links">
-      </nav>
+      <div class="drawer-header">
+        <span class="brand-link"><a href="/">MD ESSENTIAL</a></span>
+        <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="drawer-body" style="justify-content: flex-start; align-items: stretch; padding-top: 32px;">
+        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Masculino</a>
+        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Feminino</a>
+        <a href="/category" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Coleções</a>
+        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Acessórios</a>
+        ${!token ? `
+          <button id="mobile-login-toggle" class="button" style="margin-top: 32px; width: 100%;">ENTRAR / CRIAR CONTA</button>
+        ` : `
+          <a href="/account" class="button" style="margin-top: 32px; width: 100%; text-align: center;">MINHA CONTA</a>
+        `}
+      </div>
     </div>
-    
+
     <!-- Shared Overlay -->
     <div class="drawer-overlay" id="global-overlay"></div>
 
     <!-- Login Drawer -->
     <div class="login-drawer" id="login-drawer">
       <div class="drawer-header">
-        <h2 class="text-uppercase-bold">IDENTIFICAÇÃO</h2>
+        <h2>Identificação</h2>
         <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
       </div>
       <div class="drawer-tabs">
-        <button class="drawer-tab-btn active" id="tab-login-btn">ENTRAR</button>
-        <button class="drawer-tab-btn" id="tab-register-btn">CADASTRAR</button>
+        <button class="drawer-tab-btn active" id="tab-login-btn">Entrar</button>
+        <button class="drawer-tab-btn" id="tab-register-btn">Cadastrar</button>
       </div>
       <div class="drawer-body">
         <!-- Login Form -->
         <div id="drawer-login-content">
           <form class="auth-form-drawer" id="drawer-login-form">
-            <label>E-MAIL OU USUÁRIO</label>
+            <label>E-mail ou usuário</label>
             <input type="text" id="drawer-login-user" required placeholder="seu@email.com" />
-            <label>SENHA</label>
+            <label>Senha</label>
             <input type="password" id="drawer-login-pass" required placeholder="••••••••" />
             <button type="submit" class="button w-100 mb-3">ENTRAR</button>
             <p id="drawer-login-msg" class="text-danger small text-center"></p>
           </form>
         </div>
-        <!-- Register Form (Hidden by default) -->
+        <!-- Register Form -->
         <div id="drawer-register-content" style="display:none;">
           <form class="auth-form-drawer" id="drawer-register-form">
-            <label>NOME DE USUÁRIO</label>
+            <label>Nome de usuário</label>
             <input type="text" id="drawer-reg-user" required />
-            <label>E-MAIL</label>
+            <label>E-mail</label>
             <input type="email" id="drawer-reg-email" required />
-            <label>SENHA</label>
+            <label>Senha</label>
             <input type="password" id="drawer-reg-pass" required />
             <button type="submit" class="button w-100 mb-3">CRIAR CONTA</button>
             <p id="drawer-reg-msg" class="small text-center"></p>
@@ -85,11 +223,14 @@ export function renderNav(activePage) {
         </div>
       </div>
     </div>
-    
-    <!-- Side Cart Drawer -->
+
+    <!-- Cart Drawer -->
     <div class="cart-drawer" id="cart-drawer">
+      <div class="cart-success-banner" id="cart-success-banner">
+        <span>✓ Adicionado ao carrinho</span>
+      </div>
       <div class="drawer-header">
-        <h2 class="text-uppercase-bold">SEU CARRINHO</h2>
+        <h2>Seu Carrinho</h2>
         <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
       </div>
       
@@ -100,35 +241,43 @@ export function renderNav(activePage) {
         </div>
       </div>
 
-      <div class="drawer-content" id="drawer-items"></div>
+      <div class="drawer-body" id="drawer-items"></div>
 
       <div class="drawer-footer">
         <div class="subtotal-info">
-          <span class="fw-bold">SUBTOTAL</span>
-          <span class="fw-bold" id="drawer-subtotal">R$ 0,00</span>
+          <span>Subtotal</span>
+          <span id="drawer-subtotal">R$ 0,00</span>
         </div>
-        <a href="/cart" class="button button-outline w-100 mb-2">VER CARRINHO COMPLETO</a>
-        <button class="button w-100" id="drawer-checkout">FINALIZAR COMPRA</button>
+        <button class="button w-100" id="drawer-checkout" style="margin-bottom: 12px;">FINALIZAR COMPRA</button>
+        <a href="/cart" class="button-as-link" style="display: block; text-align: center;">Continuar comprando →</a>
       </div>
     </div>
 
-    <!-- Search Drawer -->
-    <div class="search-drawer" id="search-drawer">
-      <div class="drawer-header">
-        <h2 class="text-uppercase-bold">BUSCAR PRODUTO</h2>
-        <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
+    <!-- Search Overlay (Fullscreen) -->
+    <div class="search-overlay" id="search-overlay">
+      <button class="search-overlay-close" id="search-overlay-close"><i class="fas fa-times"></i></button>
+      <div class="search-overlay-input-wrapper">
+        <input type="text" class="search-overlay-input" id="search-overlay-input" placeholder="Pesquisar produtos..." autocomplete="off" />
       </div>
-      <div class="drawer-body">
-        <form id="global-search-form" class="auth-form-drawer">
-          <label>O QUE VOCÊ PROCURA?</label>
-          <div class="position-relative">
-            <input type="text" id="global-search-input" placeholder="Ex: Regata, T-shirt, Legging..." required />
-            <button type="submit" class="icon-button" style="position: absolute; right: 10px; top: 10px; padding: 5px;">
-              <i class="fas fa-search"></i>
-            </button>
+      <div class="search-overlay-body" id="search-overlay-body">
+        <div id="search-default-content">
+          <p class="search-section-title">Buscas populares</p>
+          <div class="search-popular-list">
+            <a href="/products?search=regata">Regata</a>
+            <a href="/products?search=shorts">Shorts</a>
+            <a href="/products?search=legging">Legging</a>
+            <a href="/products?search=moletom">Moletom</a>
+            <a href="/products?search=dry fit">Dry Fit</a>
           </div>
-        </form>
-        <div id="search-results-preview" class="mt-4"></div>
+          <p class="search-section-title">Categorias</p>
+          <div class="search-chips">
+            <a href="/products" class="search-chip">Masculino</a>
+            <a href="/products" class="search-chip">Feminino</a>
+            <a href="/category.html?id=Kits" class="search-chip">Kits</a>
+            <a href="/products" class="search-chip">Acessórios</a>
+          </div>
+        </div>
+        <div id="search-results-content" style="display: none;"></div>
       </div>
     </div>
   `;
@@ -360,22 +509,114 @@ export function initDrawerEvents() {
   const cartDrawer = document.getElementById('cart-drawer');
   const loginDrawer = document.getElementById('login-drawer');
   const mobileMenuDrawer = document.getElementById('mobile-menu-drawer');
-  const searchDrawer = document.getElementById('search-drawer');
+  const searchOverlay = document.getElementById('search-overlay');
+  const header = document.getElementById('app-header');
+  const announcementBar = document.getElementById('announcement-bar');
+  const megaMenuOverlay = document.getElementById('mega-menu-overlay');
 
+  // ─── Close All Drawers ───
   function closeAllDrawers() {
     cartDrawer?.classList.remove('open');
     loginDrawer?.classList.remove('open');
     mobileMenuDrawer?.classList.remove('open');
-    searchDrawer?.classList.remove('open');
     globalOverlay?.classList.remove('open');
+    closeSearchOverlay();
+    closeMegaMenus();
   }
 
-  window.toggleCartDrawer = (open = true) => {
+  // ─── Mega Menu Logic (Hover with 150ms delay) ───
+  let megaOpenTimer = null;
+  let megaCloseTimer = null;
+  let currentMegaMenu = null;
+
+  function openMegaMenu(key) {
+    clearTimeout(megaCloseTimer);
+    // Close any other open menu
+    document.querySelectorAll('.mega-menu-container.open').forEach(m => {
+      if (m.id !== `mega-${key}`) m.classList.remove('open');
+    });
+    const menu = document.getElementById(`mega-${key}`);
+    if (menu) {
+      menu.classList.add('open');
+      megaMenuOverlay?.classList.add('open');
+      currentMegaMenu = key;
+    }
+  }
+
+  function closeMegaMenus() {
+    clearTimeout(megaOpenTimer);
+    clearTimeout(megaCloseTimer);
+    document.querySelectorAll('.mega-menu-container.open').forEach(m => m.classList.remove('open'));
+    megaMenuOverlay?.classList.remove('open');
+    currentMegaMenu = null;
+  }
+
+  // Attach hover events to nav links with data-mega attribute
+  document.querySelectorAll('.nav-link[data-mega]').forEach(link => {
+    link.addEventListener('mouseenter', () => {
+      const key = link.dataset.mega;
+      clearTimeout(megaCloseTimer);
+      megaOpenTimer = setTimeout(() => openMegaMenu(key), 150);
+    });
+    link.addEventListener('mouseleave', () => {
+      clearTimeout(megaOpenTimer);
+      megaCloseTimer = setTimeout(() => closeMegaMenus(), 300);
+    });
+    // Prevent navigation on click when mega menu is open (let user browse menu)
+    link.addEventListener('click', (e) => {
+      if (currentMegaMenu === link.dataset.mega) {
+        e.preventDefault();
+      }
+    });
+  });
+
+  // Keep mega menu open when hovering over it
+  document.querySelectorAll('.mega-menu-container').forEach(menu => {
+    menu.addEventListener('mouseenter', () => {
+      clearTimeout(megaCloseTimer);
+    });
+    menu.addEventListener('mouseleave', () => {
+      megaCloseTimer = setTimeout(() => closeMegaMenus(), 300);
+    });
+  });
+
+  // Close mega menu on overlay click
+  megaMenuOverlay?.addEventListener('click', closeMegaMenus);
+
+  // ─── Header Scroll (Collapse/Expand + Announcement Bar) ───
+  let lastScrollY = 0;
+  window.addEventListener('scroll', () => {
+    const scrollY = window.scrollY;
+    
+    if (scrollY > 50) {
+      header?.classList.add('compact');
+      announcementBar?.classList.add('hidden');
+      document.body.style.paddingTop = `${parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 100}px`;
+    } else {
+      header?.classList.remove('compact');
+      announcementBar?.classList.remove('hidden');
+      document.body.style.paddingTop = '';
+    }
+    
+    lastScrollY = scrollY;
+  }, { passive: true });
+
+  // ─── Cart Drawer ───
+  window.toggleCartDrawer = (open = true, showBanner = false) => {
     closeAllDrawers();
     if (open) {
       cartDrawer?.classList.add('open');
       globalOverlay?.classList.add('open');
       renderDrawerItems();
+      
+      // Show success banner
+      if (showBanner) {
+        const banner = document.getElementById('cart-success-banner');
+        if (banner) {
+          banner.classList.add('show');
+          setTimeout(() => banner.classList.remove('show'), 3000);
+        }
+      }
     }
   };
 
@@ -395,19 +636,108 @@ export function initDrawerEvents() {
     }
   };
 
-  window.toggleSearchDrawer = (open = true) => {
-    closeAllDrawers();
-    if (open) {
-      searchDrawer?.classList.add('open');
-      globalOverlay?.classList.add('open');
-      document.getElementById('global-search-input')?.focus();
-    }
-  };
+  // ─── Search Overlay (Fullscreen) ───
+  let searchDebounceTimer = null;
 
+  function openSearchOverlay() {
+    closeAllDrawers();
+    searchOverlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      document.getElementById('search-overlay-input')?.focus();
+    }, 100);
+  }
+
+  function closeSearchOverlay() {
+    searchOverlay?.classList.remove('open');
+    document.body.style.overflow = '';
+    const searchInput = document.getElementById('search-overlay-input');
+    if (searchInput) searchInput.value = '';
+    const defaultContent = document.getElementById('search-default-content');
+    const resultsContent = document.getElementById('search-results-content');
+    if (defaultContent) defaultContent.style.display = 'block';
+    if (resultsContent) { resultsContent.style.display = 'none'; resultsContent.innerHTML = ''; }
+  }
+
+  window.toggleSearchOverlay = openSearchOverlay;
+
+  document.getElementById('search-toggle')?.addEventListener('click', openSearchOverlay);
+  document.getElementById('search-overlay-close')?.addEventListener('click', closeSearchOverlay);
+
+  // Close search on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (searchOverlay?.classList.contains('open')) {
+        closeSearchOverlay();
+      }
+      closeMegaMenus();
+    }
+  });
+
+  // Debounced live search
+  const searchInput = document.getElementById('search-overlay-input');
+  const defaultContent = document.getElementById('search-default-content');
+  const resultsContent = document.getElementById('search-results-content');
+
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    const query = searchInput.value.trim();
+
+    if (!query) {
+      if (defaultContent) defaultContent.style.display = 'block';
+      if (resultsContent) { resultsContent.style.display = 'none'; resultsContent.innerHTML = ''; }
+      return;
+    }
+
+    searchDebounceTimer = setTimeout(async () => {
+      if (defaultContent) defaultContent.style.display = 'none';
+      if (resultsContent) {
+        resultsContent.style.display = 'block';
+        resultsContent.innerHTML = '<p style="text-align: center; padding: 24px 0; color: var(--color-text-muted);">Buscando...</p>';
+      }
+
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
+        const products = await res.json();
+
+        if (products.length === 0) {
+          resultsContent.innerHTML = `
+            <p style="text-align: center; padding: 24px 0; color: var(--color-text-muted);">Nenhum produto encontrado para "${query}"</p>
+            <p class="search-section-title">Tente buscar por</p>
+            <div class="search-chips">
+              <a href="/products?search=regata" class="search-chip">Regata</a>
+              <a href="/products?search=shorts" class="search-chip">Shorts</a>
+              <a href="/products?search=moletom" class="search-chip">Moletom</a>
+            </div>
+          `;
+        } else {
+          resultsContent.innerHTML = `
+            <div class="search-results-grid">
+              ${products.slice(0, 4).map(p => `
+                <a href="/product?id=${p._id}" class="search-result-item">
+                  <img src="${p.image || (p.images && p.images[0]) || ''}" alt="${p.name}" />
+                  <h4>${p.name}</h4>
+                  <span class="search-result-price">R$ ${p.price.toFixed(2)}</span>
+                </a>
+              `).join('')}
+            </div>
+            ${products.length > 4 ? `
+              <a href="/products?search=${encodeURIComponent(query)}" class="search-view-all">
+                Ver todos os ${products.length} resultados →
+              </a>
+            ` : ''}
+          `;
+        }
+      } catch (err) {
+        resultsContent.innerHTML = '<p style="text-align: center; padding: 24px 0; color: var(--color-error);">Erro ao buscar produtos.</p>';
+      }
+    }, 300);
+  });
+
+  // ─── Button Bindings ───
   document.getElementById('cart-drawer-toggle')?.addEventListener('click', () => toggleCartDrawer(true));
   document.getElementById('login-drawer-toggle')?.addEventListener('click', () => toggleLoginDrawer(true));
   document.getElementById('mobile-menu-toggle')?.addEventListener('click', () => toggleMobileMenuDrawer(true));
-  document.getElementById('search-toggle')?.addEventListener('click', () => toggleSearchDrawer(true));
   
   document.getElementById('mobile-login-toggle')?.addEventListener('click', () => {
     toggleMobileMenuDrawer(false);
@@ -417,7 +747,7 @@ export function initDrawerEvents() {
   document.querySelectorAll('.close-drawers').forEach(btn => btn.addEventListener('click', closeAllDrawers));
   globalOverlay?.addEventListener('click', closeAllDrawers);
 
-  // Event delegation for cart drawer item quantity controls and removal
+  // ─── Cart Drawer: Quantity Controls ───
   cartDrawer?.addEventListener('click', async (e) => {
     const button = e.target.closest('[data-action]');
     if (!button) return;
@@ -442,43 +772,7 @@ export function initDrawerEvents() {
     await window.updateQty(key, newQty, stock);
   });
 
-  // Global Search Functionality
-  const searchForm = document.getElementById('global-search-form');
-  const searchInput = document.getElementById('global-search-input');
-  const searchResults = document.getElementById('search-results-preview');
-
-  searchForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const query = searchInput.value.trim();
-    if (!query) return;
-
-    searchResults.innerHTML = '<p class="text-center py-3">Buscando...</p>';
-
-    try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
-      const products = await res.json();
-
-      if (products.length === 0) {
-        searchResults.innerHTML = '<p class="text-center py-3">Nenhum produto encontrado.</p>';
-      } else {
-        searchResults.innerHTML = `
-          <div class="search-grid-preview" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            ${products.slice(0, 4).map(p => `
-              <a href="/product?id=${p._id}" class="search-item-preview" style="display: block; text-decoration: none; color: inherit;">
-                <img src="${p.image || p.images[0]}" style="width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 4px;" />
-                <h4 style="font-size: 0.7rem; margin-top: 5px; text-transform: uppercase;">${p.name}</h4>
-                <p style="font-size: 0.75rem; font-weight: 800; color: var(--color-accent);">R$ ${p.price.toFixed(2)}</p>
-              </a>
-            `).join('')}
-          </div>
-          ${products.length > 4 ? `<a href="/products?search=${encodeURIComponent(query)}" class="button small w-100 mt-3">VER TODOS OS ${products.length} RESULTADOS</a>` : ''}
-        `;
-      }
-    } catch (err) {
-      searchResults.innerHTML = '<p class="text-center py-3">Erro ao buscar.</p>';
-    }
-  });
-
+  // ─── Login/Register Tabs ───
   const loginTab = document.getElementById('tab-login-btn');
   const regTab = document.getElementById('tab-register-btn');
   const loginContent = document.getElementById('drawer-login-content');
@@ -493,6 +787,7 @@ export function initDrawerEvents() {
     regContent.style.display = 'block'; loginContent.style.display = 'none';
   });
 
+  // ─── Login Form Submit ───
   document.getElementById('drawer-login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('drawer-login-user').value;
@@ -514,6 +809,7 @@ export function initDrawerEvents() {
     } catch (err) { msg.textContent = 'Erro ao conectar.'; btn.disabled = false; }
   });
 
+  // ─── Register Form Submit ───
   document.getElementById('drawer-register-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -534,6 +830,7 @@ export function initDrawerEvents() {
     } catch (err) { msg.textContent = 'Erro ao conectar.'; }
   });
 
+  // ─── Checkout Button ───
   document.getElementById('drawer-checkout')?.addEventListener('click', () => {
     const cart = JSON.parse(localStorage.getItem('md-essential-cart') || '{}');
     if (Object.keys(cart).length === 0) {
@@ -548,13 +845,22 @@ export function initDrawerEvents() {
 export function renderProductCard(product) {
   const productId = product._id || product.id;
   const stock = product.countInStock || 0;
-  const badge = product.badge;
+  const isKit = product.category && /kits/i.test(product.category);
   const image = product.image || (product.images && product.images.length ? product.images[0] : '');
+
+  // Calculate original price for kits to show simulated discount
+  const originalPriceHtml = isKit 
+    ? `<span class="price-original">R$ ${(product.price * 1.66).toFixed(2)}</span>` 
+    : '';
+
+  const badgeHtml = isKit 
+    ? `<div class="badge badge-kit">KIT -40%</div>` 
+    : (product.badge ? `<div class="badge">${product.badge}</div>` : '');
 
   return `
     <article class="card product-card">
       <div class="product-image">
-        ${badge ? `<div class="badge">${badge}</div>` : ''}
+        ${badgeHtml}
         ${image ? `<img src="${image}" alt="${product.name}" />` : '<span>Sem imagem</span>'}
         <div class="product-card-overlay">
            <a class="button small" href="/product?id=${productId}">VER DETALHES</a>
@@ -562,21 +868,30 @@ export function renderProductCard(product) {
       </div>
       <div class="card-body">
         <h3 class="product-title">${product.name}</h3>
-        <div class="product-price-row">
-          <span class="price-tag">R$ ${product.price.toFixed(2)}</span>
+        <div class="product-price-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+          ${originalPriceHtml}
+          <span class="price-tag ${isKit ? 'price-promo' : ''}">R$ ${product.price.toFixed(2)}</span>
         </div>
         
         <div class="product-variations-preview">
           <div class="swatches-row">
-            <span class="swatch" style="background: #000;"></span>
-            <span class="swatch" style="background: #fff; border: 1px solid #ddd;"></span>
-            <span class="swatch" style="background: #808080;"></span>
+            ${product.colors && product.colors.length ? product.colors.map(c => `
+              <span class="swatch" style="background: ${c.hex}; border: 1px solid #ddd;" title="${c.name}"></span>
+            `).join('') : `
+              <span class="swatch" style="background: #000;"></span>
+              <span class="swatch" style="background: #fff; border: 1px solid #ddd;"></span>
+              <span class="swatch" style="background: #808080;"></span>
+            `}
           </div>
           <div class="sizes-row">
-            <span>P</span>
-            <span>M</span>
-            <span>G</span>
-            <span>GG</span>
+            ${product.sizes && product.sizes.length ? product.sizes.map(s => `
+              <span>${s}</span>
+            `).join('') : `
+              <span>P</span>
+              <span>M</span>
+              <span>G</span>
+              <span>GG</span>
+            `}
           </div>
         </div>
 

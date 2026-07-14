@@ -19,7 +19,10 @@ root.innerHTML = `
         <button type="submit" class="button">Entrar</button>
       </form>
       <p id="login-message" class="hint"></p>
-      <p class="hint">Ainda não tem conta? <a href="/register">Cadastre-se</a>.</p>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 0.85rem;">
+        <a href="/forgot-password" style="text-decoration: underline;">Esqueceu sua senha?</a>
+        <span>Ainda não tem conta? <a href="/register" style="text-decoration: underline;">Cadastre-se</a></span>
+      </div>
     </section>
   </main>
   ${renderFooter()}

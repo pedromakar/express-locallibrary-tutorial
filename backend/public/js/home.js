@@ -37,12 +37,11 @@ function render(products, categories) {
       <section class="hero premium-hero">
         <div class="hero-overlay"></div>
         <div class="hero-content-box">
-          <p class="eyebrow">ESTÉTICA & PERFORMANCE</p>
-          <h1>MD ESSENTIAL<br>FITNESS</h1>
-          <p>O uniforme de quem não aceita o comum. Tecidos tecnológicos com modelagem premium.</p>
-          <div class="button-row">
-            <a class="button" href="/products">COMPRAR AGORA</a>
-            <a class="button secondary" href="/category">COLEÇÕES</a>
+          <p class="eyebrow">Coleção Apex Pro - A Melhor do Brasil</p>
+          <h1 class="text-uppercase-bold">O INVERNO É O NOSSO PONTO ZERO</h1>
+          <p>Alta performance e isolamento térmico inteligente. Desenvolvido para superar o frio com atitude.</p>
+          <div class="button-row" style="margin-top: 24px;">
+            <a class="button" href="/category.html?id=Moletom">VER COLEÇÃO</a>
           </div>
         </div>
       </section>

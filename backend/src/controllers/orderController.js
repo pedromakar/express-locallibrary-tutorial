@@ -1,5 +1,6 @@
 const Order = require('../models/order');
 const Product = require('../models/product');
+const Notification = require('../models/notification');
 
 // POST /api/orders
 exports.createOrder = async (req, res) => {
@@ -49,6 +50,35 @@ exports.createOrder = async (req, res) => {
     });
 
     const createdOrder = await order.save();
+
+    // Fire-and-forget notifications
+    Notification.create({
+      type: 'new_order',
+      title: 'Novo pedido recebido',
+      message: `Pedido #${createdOrder._id.toString().slice(-6).toUpperCase()} — R$ ${totalPrice.toFixed(2)}`,
+      relatedId: createdOrder._id.toString(),
+    }).catch(() => {});
+
+    // Check for out of stock products
+    for (const item of orderItems) {
+      const prod = await Product.findById(item.productId).lean();
+      if (prod && prod.countInStock === 0) {
+        Notification.create({
+          type: 'out_of_stock',
+          title: 'Produto sem estoque',
+          message: `"${prod.name}" está com estoque zerado.`,
+          relatedId: prod._id.toString(),
+        }).catch(() => {});
+      } else if (prod && prod.countInStock > 0 && prod.countInStock <= 5) {
+        Notification.create({
+          type: 'low_stock',
+          title: 'Estoque baixo',
+          message: `"${prod.name}" tem apenas ${prod.countInStock} unidades.`,
+          relatedId: prod._id.toString(),
+        }).catch(() => {});
+      }
+    }
+
     res.status(201).json({ 
       message: 'Pedido criado com sucesso', 
       orderId: createdOrder._id,
@@ -111,6 +141,25 @@ exports.updateOrderStatus = async (req, res) => {
 
     order.status = status;
     const updatedOrder = await order.save();
+
+    // Notify on cancellation
+    if (status === 'canceled') {
+      Notification.create({
+        type: 'order_canceled',
+        title: 'Pedido cancelado',
+        message: `Pedido #${order._id.toString().slice(-6).toUpperCase()} foi cancelado.`,
+        relatedId: order._id.toString(),
+      }).catch(() => {});
+    }
+    if (status === 'shipped') {
+      Notification.create({
+        type: 'order_shipped',
+        title: 'Pedido enviado',
+        message: `Pedido #${order._id.toString().slice(-6).toUpperCase()} foi marcado como enviado.`,
+        relatedId: order._id.toString(),
+      }).catch(() => {});
+    }
+
     res.json(updatedOrder);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao atualizar status do pedido', error: err.message });

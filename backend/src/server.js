@@ -11,6 +11,7 @@ const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', orderRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
@@ -54,16 +56,20 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'login.html'));
 });
 
+app.get('/forgot-password', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'forgot-password.html'));
+});
+
 app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'register.html'));
 });
 
 app.get('/account', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public', 'profile.html'));
+  res.sendFile(path.join(__dirname, '../public', 'account.html'));
 });
 
 app.get('/profile', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public', 'profile.html'));
+  res.sendFile(path.join(__dirname, '../public', 'account.html'));
 });
 
 app.get('/products', (req, res) => {
