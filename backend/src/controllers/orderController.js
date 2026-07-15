@@ -43,7 +43,7 @@ exports.createOrder = async (req, res) => {
     }
 
     const order = new Order({
-      user: req.user._id,
+      user: req.user.id || req.user._id,
       items: orderItems,
       totalPrice: totalPrice,
       status: 'pending'
@@ -109,7 +109,8 @@ exports.getOrderById = async (req, res) => {
     }
     
     // Check ownership
-    if (order.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    const userId = req.user.id || req.user._id;
+    if (order.user.toString() !== userId.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Acesso negado' });
     }
 

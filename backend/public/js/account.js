@@ -10,7 +10,25 @@ if (!token) {
 
 // State management
 let userData = null;
-let activeTab = 'perfil'; // 'perfil', 'enderecos', 'marketing'
+let activeTab = 'perfil'; // 'perfil', 'enderecos', 'marketing', 'pedidos'
+let userOrders = [];
+
+// Fetch user orders history
+async function loadUserOrders() {
+  try {
+    const response = await fetch(`/api/orders/${userData._id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (response.ok) {
+      userOrders = await response.json();
+    }
+  } catch (err) {
+    console.error('Erro ao buscar pedidos:', err);
+  }
+}
+
 
 // Tooltip descriptions
 const marketingTooltips = {
@@ -108,6 +126,9 @@ function renderDashboard() {
           <div class="account-menu-item ${activeTab === 'perfil' ? 'active' : ''}" data-tab="perfil">
             <i class="fas fa-user-circle"></i> PERFIL
           </div>
+          <div class="account-menu-item ${activeTab === 'pedidos' ? 'active' : ''}" data-tab="pedidos">
+            <i class="fas fa-shopping-bag"></i> MEUS PEDIDOS
+          </div>
           <div class="account-menu-item ${activeTab === 'enderecos' ? 'active' : ''}" data-tab="enderecos">
             <i class="fas fa-map-marker-alt"></i> ENDEREÇOS
           </div>
@@ -154,6 +175,9 @@ function countActiveMarketingChannels() {
 
 // Switch between content rendering based on selected Tab
 function renderActiveTabContent(activeChannels) {
+  if (activeTab === 'pedidos') {
+    return renderOrdersTabContent();
+  }
   if (activeTab === 'perfil') {
     const avatarImg = userData.avatar || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=150&q=80';
     return `
@@ -388,7 +412,11 @@ function initTabEvents() {
       const tab = item.getAttribute('data-tab');
       if (tab && tab !== activeTab) {
         activeTab = tab;
-        renderDashboard();
+        if (tab === 'pedidos') {
+          loadUserOrders().then(() => renderDashboard());
+        } else {
+          renderDashboard();
+        }
       }
     });
   });
@@ -727,6 +755,80 @@ function initFormActions() {
       }
     });
   });
+}
+
+// Render Orders Tab Content
+function renderOrdersTabContent() {
+  if (!userOrders || userOrders.length === 0) {
+    return `
+      <div style="text-align: center; padding: 48px 24px;">
+        <i class="fas fa-shopping-bag" style="font-size: 3rem; color: var(--color-text-muted); margin-bottom: 16px; display: block;"></i>
+        <h3 style="font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 1.15rem; margin-bottom: 8px;">Nenhum pedido encontrado</h3>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">Você ainda não realizou compras na nossa loja.</p>
+        <a class="button" href="/products" style="margin-top: 24px; display: inline-block;">Ver Produtos</a>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; font-size: 1.25rem;">Meus Pedidos</h2>
+      <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 24px;">Acompanhe o status e histórico de todas as suas compras.</p>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      ${userOrders.map(order => `
+        <div style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: #ffffff;">
+          <div style="background-color: var(--color-bg); padding: 16px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">PEDIDO</span>
+              <strong style="font-size: 0.9rem; font-family: var(--font-display);">#${order._id.slice(-6).toUpperCase()}</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">REALIZADO EM</span>
+              <strong style="font-size: 0.9rem;">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">TOTAL</span>
+              <strong style="font-size: 0.9rem; color: var(--color-black);">R$ ${order.totalPrice.toFixed(2)}</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-bottom: 2px;">STATUS</span>
+              <span class="badge ${
+                order.status === 'paid' ? 'badge-success' :
+                order.status === 'shipped' ? 'badge-info' :
+                order.status === 'canceled' ? 'badge-error' :
+                'badge-warning'
+              }" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 12px; display: inline-block;">
+                ${
+                  order.status === 'pending' ? 'Pendente' :
+                  order.status === 'paid' ? 'Pago' :
+                  order.status === 'shipped' ? 'Enviado' :
+                  order.status === 'canceled' ? 'Cancelado' : order.status
+                }
+              </span>
+            </div>
+          </div>
+          <div style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              ${order.items.map(item => `
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                  <div>
+                    <strong style="color: var(--color-text);">${item.name}</strong>
+                    ${item.size ? `<span style="font-size: 0.7rem; color: var(--color-text-muted); margin-left: 8px;">Tamanho: ${item.size}</span>` : ''}
+                    ${item.color ? `<span style="font-size: 0.7rem; color: var(--color-text-muted); margin-left: 8px;">Cor: ${item.color}</span>` : ''}
+                  </div>
+                  <div style="color: var(--color-text-muted);">
+                    ${item.quantity}x R$ ${item.price.toFixed(2)}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 // Trigger initial load

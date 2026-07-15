@@ -2,11 +2,41 @@ import { renderNav, renderFooter, initDrawerEvents, updateCartBadge, syncCart, g
 
 const CART_KEY = 'md-essential-cart';
 const root = document.getElementById('page-root');
+const token = localStorage.getItem('md-essential-admin-token');
 
 let selectedPayment = null;
 let selectedShipping = null;
 
 async function renderCheckout() {
+  if (!token) {
+    alert('Você precisa estar logado para finalizar a compra.');
+    window.location.href = '/login';
+    return;
+  }
+
+  let userData = null;
+  try {
+    const profileRes = await fetch('/api/users/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (profileRes.ok) {
+      const profileData = await profileRes.json();
+      userData = profileData.user;
+    } else {
+      localStorage.removeItem('md-essential-admin-token');
+      localStorage.removeItem('username');
+      alert('Sessão expirada. Por favor, faça login novamente.');
+      window.location.href = '/login';
+      return;
+    }
+  } catch (err) {
+    console.error('Erro ao buscar perfil do usuário:', err);
+  }
+
+  const defaultAddress = userData?.addresses?.find(addr => addr.isDefault) || userData?.addresses?.[0];
+
   const cart = getSafeCart();
   const cartKeys = Object.keys(cart);
 
@@ -78,19 +108,19 @@ async function renderCheckout() {
                 <div class="checkout-form-grid">
                   <div class="form-group">
                     <label for="ck-name">NOME COMPLETO *</label>
-                    <input type="text" id="ck-name" placeholder="Seu nome completo" required />
+                    <input type="text" id="ck-name" value="${userData?.username || ''}" placeholder="Seu nome completo" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-email">E-MAIL *</label>
-                    <input type="email" id="ck-email" placeholder="seu@email.com" required />
+                    <input type="email" id="ck-email" value="${userData?.email || ''}" placeholder="seu@email.com" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-cpf">CPF (OPCIONAL)</label>
-                    <input type="text" id="ck-cpf" placeholder="000.000.000-00" maxlength="14" />
+                    <input type="text" id="ck-cpf" value="${userData?.cpf || ''}" placeholder="000.000.000-00" maxlength="14" />
                   </div>
                   <div class="form-group">
                     <label for="ck-phone">TELEFONE *</label>
-                    <input type="text" id="ck-phone" placeholder="(00) 00000-0000" maxlength="15" required />
+                    <input type="text" id="ck-phone" value="${userData?.phone || ''}" placeholder="(00) 00000-0000" maxlength="15" required />
                   </div>
                 </div>
               </div>
@@ -106,51 +136,41 @@ async function renderCheckout() {
                 <div class="checkout-form-grid">
                   <div class="form-group" style="grid-column: 1 / -1; max-width: 200px;">
                     <label for="ck-cep">CEP *</label>
-                    <input type="text" id="ck-cep" placeholder="00000-000" maxlength="9" required />
+                    <input type="text" id="ck-cep" value="${defaultAddress?.cep || ''}" placeholder="00000-000" maxlength="9" required />
                   </div>
                   <div class="form-group" style="grid-column: 1 / -1;">
                     <label for="ck-street">RUA *</label>
-                    <input type="text" id="ck-street" placeholder="Nome da rua" required />
+                    <input type="text" id="ck-street" value="${defaultAddress?.street || ''}" placeholder="Nome da rua" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-number">NÚMERO *</label>
-                    <input type="text" id="ck-number" placeholder="Nº" required />
+                    <input type="text" id="ck-number" value="${defaultAddress?.number || ''}" placeholder="Nº" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-complement">COMPLEMENTO</label>
-                    <input type="text" id="ck-complement" placeholder="Apto, bloco..." />
+                    <input type="text" id="ck-complement" value="${defaultAddress?.complement || ''}" placeholder="Apto, bloco..." />
                   </div>
                   <div class="form-group">
                     <label for="ck-neighborhood">BAIRRO *</label>
-                    <input type="text" id="ck-neighborhood" placeholder="Bairro" required />
+                    <input type="text" id="ck-neighborhood" value="${defaultAddress?.neighborhood || ''}" placeholder="Bairro" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-city">CIDADE *</label>
-                    <input type="text" id="ck-city" placeholder="Cidade" required />
+                    <input type="text" id="ck-city" value="${defaultAddress?.city || ''}" placeholder="Cidade" required />
                   </div>
                   <div class="form-group">
                     <label for="ck-state">ESTADO *</label>
                     <select id="ck-state" required>
                       <option value="">Selecione</option>
-                      <option value="AC">AC</option><option value="AL">AL</option>
-                      <option value="AP">AP</option><option value="AM">AM</option>
-                      <option value="BA">BA</option><option value="CE">CE</option>
-                      <option value="DF">DF</option><option value="ES">ES</option>
-                      <option value="GO">GO</option><option value="MA">MA</option>
-                      <option value="MT">MT</option><option value="MS">MS</option>
-                      <option value="MG">MG</option><option value="PA">PA</option>
-                      <option value="PB">PB</option><option value="PR">PR</option>
-                      <option value="PE">PE</option><option value="PI">PI</option>
-                      <option value="RJ">RJ</option><option value="RN">RN</option>
-                      <option value="RS">RS</option><option value="RO">RO</option>
-                      <option value="RR">RR</option><option value="SC">SC</option>
-                      <option value="SP">SP</option><option value="SE">SE</option>
-                      <option value="TO">TO</option>
+                      ${['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'].map(st => `
+                        <option value="${st}" ${defaultAddress?.state === st ? 'selected' : ''}>${st}</option>
+                      `).join('')}
                     </select>
                   </div>
                 </div>
               </div>
             </div>
+
 
             <!-- Shipping -->
             <div class="checkout-card">
@@ -413,46 +433,78 @@ function setupCheckoutEvents(subtotal, shippingOptions, items) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSANDO...';
     btn.disabled = true;
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // 1. Prepare items payload for the backend
+      const orderItems = items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        size: item.size || '',
+        color: item.color || ''
+      }));
 
-    // Clear cart
-    localStorage.removeItem(CART_KEY);
-    syncCart();
+      // 2. Make actual request to save the order
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ items: orderItems })
+      });
 
-    // Show success
-    const mainContent = document.querySelector('.checkout-layout');
-    mainContent.innerHTML = `
-      <div class="checkout-success">
-        <div class="success-icon">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <h2 class="text-uppercase-bold">Pedido Realizado com Sucesso!</h2>
-        <p>Seu pedido <strong>#${Date.now().toString(36).toUpperCase()}</strong> foi registrado.</p>
-        <p>Você receberá um e-mail de confirmação em breve.</p>
-        
-        <div class="success-details">
-          <div class="success-detail-row">
-            <span>Método de pagamento</span>
-            <strong>${getPaymentName(selectedPayment)}</strong>
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || 'Erro ao registrar pedido no servidor.');
+        btn.innerHTML = '<i class="fas fa-lock"></i> FINALIZAR PEDIDO';
+        btn.disabled = false;
+        return;
+      }
+
+      // Clear cart
+      localStorage.removeItem(CART_KEY);
+      syncCart();
+
+      // Show success using returned orderId from DB
+      const mainContent = document.querySelector('.checkout-layout');
+      mainContent.innerHTML = `
+        <div class="checkout-success">
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
           </div>
-          <div class="success-detail-row">
-            <span>Entrega</span>
-            <strong>${selectedShipping.name} — ${selectedShipping.days}</strong>
+          <h2 class="text-uppercase-bold">Pedido Realizado com Sucesso!</h2>
+          <p>Seu pedido <strong>#${data.orderId.slice(-6).toUpperCase()}</strong> foi registrado.</p>
+          <p>Você receberá um e-mail de confirmação em breve.</p>
+          
+          <div class="success-details">
+            <div class="success-detail-row">
+              <span>Método de pagamento</span>
+              <strong>${getPaymentName(selectedPayment)}</strong>
+            </div>
+            <div class="success-detail-row">
+              <span>Entrega</span>
+              <strong>${selectedShipping.name} — ${selectedShipping.days}</strong>
+            </div>
+            <div class="success-detail-row">
+              <span>Total pago</span>
+              <strong>${document.getElementById('order-total')?.textContent || `R$ ${subtotal.toFixed(2)}`}</strong>
+            </div>
           </div>
-          <div class="success-detail-row">
-            <span>Total pago</span>
-            <strong>${document.getElementById('order-total')?.textContent || `R$ ${subtotal.toFixed(2)}`}</strong>
+          
+          <div class="success-actions">
+            <a class="button" href="/products">Continuar Comprando</a>
+            <a class="button button-outline" href="/account">Ir para Minha Conta</a>
           </div>
         </div>
-        
-        <div class="success-actions">
-          <a class="button" href="/products">Continuar Comprando</a>
-          <a class="button button-outline" href="/">Voltar à Loja</a>
-        </div>
-      </div>
-    `;
+      `;
+    } catch (err) {
+      console.error(err);
+      alert('Falha na comunicação com o servidor.');
+      btn.innerHTML = '<i class="fas fa-lock"></i> FINALIZAR PEDIDO';
+      btn.disabled = false;
+    }
   });
+
 }
 
 function getPaymentName(method) {
