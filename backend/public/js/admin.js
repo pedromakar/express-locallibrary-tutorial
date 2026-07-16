@@ -836,16 +836,27 @@ window.viewCustomerDetails = async function(userId) {
         <button class="admin-modal-close" onclick="closeAdminModal()">&times;</button>
       </div>
       <div class="admin-modal-body">
-        <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--admin-color-border); padding-bottom: 20px;">
-          <img src="${user.avatar || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=120&q=80'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;" />
-          <div>
-            <h4 style="font-size: 1.2rem; margin: 0 0 4px 0; font-family: var(--admin-font-display);">${user.username.toUpperCase()}</h4>
-            <p style="margin: 0 0 4px 0; color: var(--admin-color-text-muted);">${user.email}</p>
-            <p style="margin: 0; font-size: 0.8rem; color: var(--admin-color-text-muted);">
-              Último login: ${user.lastLogin ? new Date(user.lastLogin).toLocaleString('pt-BR') : 'Sem registros'}
-            </p>
+        <form id="admin-edit-user-form" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px; border-bottom: 1px solid var(--admin-color-border); padding-bottom: 20px; flex-wrap: wrap;">
+          <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <img src="${user.avatar || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=120&q=80'}" id="admin-user-avatar-preview" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 6px;" />
+            <label for="admin-user-avatar-file" class="admin-btn admin-btn-small" style="font-size: 0.65rem; padding: 4px 8px; cursor: pointer; display: inline-block;">
+              Carregar Foto
+            </label>
+            <input type="file" id="admin-user-avatar-file" accept="image/*" style="display: none;" />
+            <input type="text" id="admin-user-avatar-url" class="admin-form-control" value="${user.avatar || ''}" placeholder="Ou cole a URL aqui" style="padding: 4px; font-size: 0.75rem; width: 120px;" />
           </div>
-        </div>
+          <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <label style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Nome de Usuário</label>
+              <input type="text" id="admin-user-username-input" class="admin-form-control" value="${user.username}" style="padding: 6px; font-size: 0.85rem;" required />
+            </div>
+            <div>
+              <label style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Endereço de E-mail</label>
+              <input type="email" id="admin-user-email-input" class="admin-form-control" value="${user.email}" style="padding: 6px; font-size: 0.85rem;" required />
+            </div>
+            <button type="submit" class="admin-btn admin-btn-small admin-btn-accent" style="margin-top: 6px; align-self: flex-start;">Salvar Alterações</button>
+          </div>
+        </form>
 
         <!-- Addresses block -->
         <h4 style="margin: 0 0 12px 0; font-family: var(--admin-font-display); text-transform: uppercase; font-size: 0.9rem;">Endereços Registrados</h4>
@@ -892,6 +903,60 @@ window.viewCustomerDetails = async function(userId) {
     </div>
   `;
   modal.classList.add('show');
+
+  // Attachment file reader logic
+  let updatedAvatar = user.avatar || '';
+  const avatarFileInput = document.getElementById('admin-user-avatar-file');
+  avatarFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        updatedAvatar = reader.result;
+        document.getElementById('admin-user-avatar-preview').src = updatedAvatar;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  const avatarUrlInput = document.getElementById('admin-user-avatar-url');
+  avatarUrlInput.addEventListener('input', (e) => {
+    updatedAvatar = e.target.value.trim();
+    document.getElementById('admin-user-avatar-preview').src = updatedAvatar || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=120&q=80';
+  });
+
+  // Handle Form submit
+  document.getElementById('admin-edit-user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('admin-user-username-input').value.trim();
+    const email = document.getElementById('admin-user-email-input').value.trim();
+
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ username, email, avatar: updatedAvatar })
+      });
+
+      if (res.ok) {
+        showToast('Perfil do cliente atualizado com sucesso!');
+        const updatedData = await res.json();
+        // Update local users list array
+        users = users.map(u => u._id === userId ? { ...u, username: updatedData.user.username, email: updatedData.user.email, avatar: updatedData.user.avatar } : u);
+        closeAdminModal();
+        renderCustomers(document.getElementById('admin-content-pane'));
+      } else {
+        const error = await res.json();
+        alert(error.message || 'Erro ao atualizar dados do cliente.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Falha na comunicação com o servidor.');
+    }
+  });
 };
 
 // --------------------------------------------------------------------------

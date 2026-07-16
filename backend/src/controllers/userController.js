@@ -109,8 +109,44 @@ exports.updateProfile = async (req, res) => {
 
     // Fetch user without password
     const updatedUser = await User.findById(user._id).select('-password');
-    res.json({ message: 'Perfil atualizado com sucesso', user: updatedUser });
+    res.json({ message: 'Perfil updated com sucesso', user: updatedUser });
   } catch (err) {
     res.status(400).json({ message: 'Erro ao atualizar perfil', error: err.message });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Usuário não encontrado' });
+
+    const { username, email, avatar } = req.body;
+
+    if (username) {
+      const normalizedUsername = username.trim().toLowerCase();
+      const existingUser = await User.findOne({ username: normalizedUsername });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(409).json({ message: 'Nome de usuário já cadastrado' });
+      }
+      user.username = normalizedUsername;
+    }
+
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const existingUser = await User.findOne({ email: normalizedEmail });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(409).json({ message: 'E-mail já cadastrado' });
+      }
+      user.email = normalizedEmail;
+    }
+
+    if (avatar !== undefined) user.avatar = avatar;
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select('-password');
+    res.json({ message: 'Perfil do usuário atualizado com sucesso', user: updatedUser });
+  } catch (err) {
+    res.status(400).json({ message: 'Erro ao atualizar usuário', error: err.message });
   }
 };

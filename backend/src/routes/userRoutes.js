@@ -6,6 +6,7 @@ const admin = require('../middlewares/admin');
 
 router.get('/', auth, admin, userController.getUsers);
 router.put('/:id/role', auth, admin, userController.updateUserRole);
+router.put('/:id', auth, admin, userController.updateUser);
 router.delete('/:id', auth, admin, userController.deleteUser);
 
 router.get('/cart', auth, userController.getCart);
