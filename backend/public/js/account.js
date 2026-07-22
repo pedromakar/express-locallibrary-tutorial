@@ -10,11 +10,14 @@ if (!token) {
 
 // State management
 let userData = null;
-let activeTab = 'perfil'; // 'perfil', 'enderecos', 'marketing', 'pedidos'
+const urlParams = new URLSearchParams(window.location.search);
+const initialTabParam = urlParams.get('tab') || (window.location.hash ? window.location.hash.replace('#', '') : '');
+let activeTab = ['perfil', 'enderecos', 'marketing', 'pedidos'].includes(initialTabParam) ? initialTabParam : 'perfil';
 let userOrders = [];
 
 // Fetch user orders history
 async function loadUserOrders() {
+  if (!userData?._id) return;
   try {
     const response = await fetch(`/api/orders/${userData._id}`, {
       headers: {
@@ -79,6 +82,7 @@ async function loadUserProfile() {
     if (response.ok) {
       const data = await response.json();
       userData = data.user;
+      await loadUserOrders();
       renderDashboard();
     } else {
       localStorage.removeItem('md-essential-admin-token');
@@ -770,66 +774,318 @@ function renderOrdersTabContent() {
     `;
   }
 
+  // Status steps definition
+  const STATUS_STEPS = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
+  const STATUS_LABELS = {
+    pending: 'Pendente',
+    paid: 'Pago',
+    processing: 'Em Preparo',
+    shipped: 'Enviado',
+    delivered: 'Entregue',
+    canceled: 'Cancelado'
+  };
+  const STATUS_ICONS = {
+    pending: 'fa-clock',
+    paid: 'fa-check',
+    processing: 'fa-box-open',
+    shipped: 'fa-truck',
+    delivered: 'fa-home',
+    canceled: 'fa-times'
+  };
+
+  // Location status info generator
+  function getLocationInfo(order) {
+    const status = order.status || 'pending';
+    switch(status) {
+      case 'pending':
+        return {
+          title: 'Aguardando Pagamento',
+          location: 'Denitex Family (Em frente à Magazine Luiza) — Centro, Sombrio / SC',
+          desc: 'Assim que o pagamento for confirmado, seu pedido entrará em separação.',
+          icon: 'fa-clock'
+        };
+      case 'paid':
+        return {
+          title: 'Pagamento Confirmado',
+          location: 'Centro de Logística — Sombrio / SC',
+          desc: 'Pagamento aprovado. Preparando pedido para entrega no Denitex Family (Centro, Sombrio/SC).',
+          icon: 'fa-check-circle'
+        };
+      case 'processing':
+        return {
+          title: 'Em Separação e Embalagem',
+          location: 'Centro de Distribuição MD Essential — Sombrio / SC',
+          desc: 'Encomenda em embalagem para entrega local no Denitex Family (em frente à Magazine Luiza).',
+          icon: 'fa-box'
+        };
+      case 'shipped':
+        return {
+          title: 'Em Rota de Entrega Local',
+          location: 'Em trânsito para Denitex Family / Centro (Sombrio - SC)',
+          desc: 'Entregador local a caminho do seu endereço em frente à Magazine Luiza.',
+          icon: 'fa-motorcycle'
+        };
+      case 'delivered':
+        return {
+          title: 'Pedido Entregue',
+          location: 'Denitex Family — Em frente à Magazine Luiza (Sombrio / SC)',
+          desc: 'Entregue com sucesso no endereço de destino.',
+          icon: 'fa-home'
+        };
+      default:
+        return {
+          title: 'Status do Pedido',
+          location: 'Denitex Family — Sombrio / SC',
+          desc: 'Processando atualização de envio.',
+          icon: 'fa-info-circle'
+        };
+    }
+  }
+
+  function renderTimeline(currentStatus) {
+    if (currentStatus === 'canceled') {
+      return `
+        <div style="display:flex;align-items:center;gap:8px;padding:14px 20px;color:var(--color-error);background:#fff5f5;border-bottom:1px solid var(--color-border);">
+          <i class="fas fa-times-circle"></i>
+          <span style="font-size:0.85rem;font-weight:700;">Pedido Cancelado</span>
+        </div>
+      `;
+    }
+    const currentIdx = STATUS_STEPS.indexOf(currentStatus);
+    return `
+      <div class="order-status-timeline" style="padding:20px 20px 12px;background:#ffffff;border-bottom:1px solid var(--color-border);">
+        ${STATUS_STEPS.map((step, i) => {
+          const isDone = i < currentIdx;
+          const isActive = i === currentIdx;
+          const cls = isDone ? 'done' : isActive ? 'active' : '';
+          return `
+            <div class="timeline-step ${cls}">
+              <div class="timeline-step-dot">
+                <i class="fas ${isDone ? 'fa-check' : STATUS_ICONS[step]}" style="font-size:0.65rem;"></i>
+              </div>
+              <div class="timeline-step-label">${STATUS_LABELS[step]}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderPaymentDetails(order) {
+    const method = order.paymentMethod || 'pix'; // fallback to pix if not stored on legacy order
+    const pixCode = order.pixCode || `00020126330014br.gov.bcb.pix01${order._id}52040000530398654${order.totalPrice.toFixed(2).replace('.','').padStart(6,'0')}5802BR5910MDEssential6008Sombrio62070503***6304ABCD`;
+    const boletoLine = order.boletoCode || `34191.75000 ${Math.floor(Math.random()*100000).toString().padStart(5,'0')}.${Math.floor(Math.random()*1000000).toString().padStart(6,'0')} ${Math.floor(Math.random()*1000000).toString().padStart(6,'0')} 1 ${Date.now().toString().slice(-14)} ${order.totalPrice.toFixed(2).replace('.','').padStart(10,'0')}`;
+
+    return `
+      <div style="border:1px solid var(--color-border);border-radius:var(--radius-sm);background:#ffffff;padding:18px;margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--color-border);">
+          <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text);display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-credit-card" style="color:var(--color-primary);"></i>
+            Dados de Pagamento (${method === 'boleto' ? 'Boleto Bancário' : method === 'credit' || method === 'debit' ? 'Cartão' : 'PIX'})
+          </div>
+          <span style="font-size:0.72rem;font-weight:700;color:${order.status==='paid'?'var(--color-success)':'var(--color-text-muted)'};">
+            ${order.status === 'paid' ? '<i class="fas fa-check-circle"></i> PAGO' : '<i class="fas fa-clock"></i> PENDENTE'}
+          </span>
+        </div>
+
+        ${method === 'boleto' ? `
+          <!-- Boleto View -->
+          <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:6px;padding:14px;">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+              <i class="fas fa-barcode"></i> Linha Digitável do Boleto:
+            </div>
+            <div style="font-family:monospace;font-size:0.85rem;font-weight:700;color:var(--color-text);background:#fff;border:1px solid var(--color-border);padding:10px;border-radius:4px;word-break:break-all;margin-bottom:10px;">
+              ${boletoLine}
+            </div>
+            <button onclick="copyToClipboard('${boletoLine}', 'Linha digitável do boleto copiada!')" class="button button-small" style="font-size:0.75rem;padding:8px 14px;display:inline-flex;align-items:center;gap:6px;">
+              <i class="fas fa-copy"></i> Copiar Linha Digitável
+            </button>
+          </div>
+        ` : `
+          <!-- PIX View (Default / PIX) -->
+          <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+            <div style="background:#fff;border:2px solid var(--color-border);border-radius:8px;padding:10px;display:inline-block;box-shadow:var(--shadow-sm);">
+              <svg width="110" height="110" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                <rect width="160" height="160" fill="white"/>
+                <rect x="10" y="10" width="50" height="50" fill="none" stroke="black" stroke-width="4"/>
+                <rect x="18" y="18" width="34" height="34" fill="black"/>
+                <rect x="100" y="10" width="50" height="50" fill="none" stroke="black" stroke-width="4"/>
+                <rect x="108" y="18" width="34" height="34" fill="black"/>
+                <rect x="10" y="100" width="50" height="50" fill="none" stroke="black" stroke-width="4"/>
+                <rect x="18" y="108" width="34" height="34" fill="black"/>
+                <rect x="68" y="10" width="8" height="8" fill="black"/>
+                <rect x="80" y="10" width="8" height="8" fill="black"/>
+                <rect x="68" y="24" width="8" height="8" fill="black"/>
+                <rect x="80" y="34" width="8" height="8" fill="black"/>
+                <rect x="68" y="50" width="8" height="8" fill="black"/>
+                <rect x="68" y="68" width="8" height="8" fill="black"/>
+                <rect x="80" y="76" width="8" height="8" fill="black"/>
+                <rect x="100" y="68" width="8" height="8" fill="black"/>
+                <rect x="120" y="68" width="8" height="8" fill="black"/>
+                <rect x="136" y="68" width="8" height="8" fill="black"/>
+                <rect x="100" y="84" width="8" height="8" fill="black"/>
+                <rect x="116" y="84" width="8" height="8" fill="black"/>
+                <rect x="100" y="100" width="8" height="8" fill="black"/>
+                <rect x="124" y="100" width="8" height="8" fill="black"/>
+                <rect x="68" y="100" width="8" height="8" fill="black"/>
+                <rect x="80" y="116" width="8" height="8" fill="black"/>
+                <rect x="68" y="132" width="8" height="8" fill="black"/>
+              </svg>
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                <i class="fas fa-qrcode"></i> Código PIX Copia e Cola:
+              </div>
+              <div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:4px;padding:10px;font-size:0.7rem;font-family:monospace;word-break:break-all;color:var(--color-text-muted);margin-bottom:10px;max-height:54px;overflow:hidden;">
+                ${pixCode}
+              </div>
+              <button onclick="copyToClipboard('${pixCode}', 'Código PIX copiado com sucesso!')" class="button button-small" style="font-size:0.75rem;padding:8px 14px;display:inline-flex;align-items:center;gap:6px;">
+                <i class="fas fa-copy"></i> Copiar Código PIX
+              </button>
+            </div>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
   return `
     <div style="margin-bottom: 24px;">
       <h2 style="font-family: var(--font-display); font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; font-size: 1.25rem;">Meus Pedidos</h2>
-      <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 24px;">Acompanhe o status e histórico de todas as suas compras.</p>
+      <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 24px;">Acompanhe o status, rastreamento e detalhes de pagamento das suas compras.</p>
     </div>
     
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      ${userOrders.map(order => `
-        <div style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: #ffffff;">
-          <div style="background-color: var(--color-bg); padding: 16px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      ${userOrders.map((order, index) => {
+        const badgeColor = order.status === 'paid' || order.status === 'delivered' ? 'var(--color-success)'
+          : order.status === 'shipped' || order.status === 'processing' ? 'var(--color-primary)'
+          : order.status === 'canceled' ? 'var(--color-error)'
+          : '#b25e00';
+
+        const location = getLocationInfo(order);
+        const isFirst = index === 0; // Auto-expand most recent order
+
+        return `
+        <div style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: #ffffff; box-shadow: var(--shadow-sm);">
+          
+          <!-- Order Header (clickable to toggle) -->
+          <div onclick="toggleOrderDetails('${order._id}')" style="background-color: var(--color-bg); padding: 18px 20px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; cursor: pointer; user-select: none;">
             <div>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">PEDIDO</span>
-              <strong style="font-size: 0.9rem; font-family: var(--font-display);">#${order._id.slice(-6).toUpperCase()}</strong>
+              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">NÚMERO DO PEDIDO</span>
+              <strong style="font-size: 1rem; font-family: var(--font-display); color: var(--color-text);">#${order._id.slice(-6).toUpperCase()}</strong>
             </div>
             <div>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">REALIZADO EM</span>
-              <strong style="font-size: 0.9rem;">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</strong>
+              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">DATA</span>
+              <strong style="font-size: 0.875rem; color: var(--color-text);">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</strong>
             </div>
             <div>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">TOTAL</span>
-              <strong style="font-size: 0.9rem; color: var(--color-black);">R$ ${order.totalPrice.toFixed(2)}</strong>
+              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">VALOR TOTAL</span>
+              <strong style="font-size: 1rem; color: var(--color-text);">R$ ${order.totalPrice.toFixed(2)}</strong>
             </div>
             <div>
-              <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-bottom: 2px;">STATUS</span>
-              <span class="badge ${
-                order.status === 'paid' ? 'badge-success' :
-                order.status === 'shipped' ? 'badge-info' :
-                order.status === 'canceled' ? 'badge-error' :
-                'badge-warning'
-              }" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 12px; display: inline-block;">
-                ${
-                  order.status === 'pending' ? 'Pendente' :
-                  order.status === 'paid' ? 'Pago' :
-                  order.status === 'shipped' ? 'Enviado' :
-                  order.status === 'canceled' ? 'Cancelado' : order.status
-                }
+              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em;">STATUS</span>
+              <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 12px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; background: ${badgeColor}18; color: ${badgeColor}; border: 1px solid ${badgeColor}40;">
+                <i class="fas ${STATUS_ICONS[order.status] || 'fa-circle'}"></i>
+                ${STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
+            <button class="button button-small" style="background: #fff; border: 1px solid var(--color-border); color: var(--color-text); font-size: 0.75rem; padding: 8px 14px; display: flex; align-items: center; gap: 6px;" id="toggle-${order._id}">
+              <i class="fas ${isFirst ? 'fa-chevron-up' : 'fa-chevron-down'}" id="icon-${order._id}"></i>
+              <span id="label-${order._id}">${isFirst ? 'Ocultar' : 'Ver Detalhes'}</span>
+            </button>
           </div>
-          <div style="padding: 20px;">
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              ${order.items.map(item => `
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                  <div>
-                    <strong style="color: var(--color-text);">${item.name}</strong>
-                    ${item.size ? `<span style="font-size: 0.7rem; color: var(--color-text-muted); margin-left: 8px;">Tamanho: ${item.size}</span>` : ''}
-                    ${item.color ? `<span style="font-size: 0.7rem; color: var(--color-text-muted); margin-left: 8px;">Cor: ${item.color}</span>` : ''}
-                  </div>
-                  <div style="color: var(--color-text-muted);">
-                    ${item.quantity}x R$ ${item.price.toFixed(2)}
-                  </div>
+
+          <!-- Status Timeline -->
+          ${renderTimeline(order.status)}
+
+          <!-- Expandable Details -->
+          <div id="details-${order._id}" style="display: ${isFirst ? 'block' : 'none'}; padding: 22px; background: #fff;">
+            
+            <!-- Location & Delivery Tracking Box -->
+            <div style="background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;">
+              <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas ${location.icon}" style="color: var(--color-primary);"></i>
+                Rastreamento e Localização
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.85rem;">
+                <div>
+                  <span style="font-size: 0.7rem; color: var(--color-text-muted); display: block; font-weight: 600;">LOCALIZAÇÃO ATUAL:</span>
+                  <strong style="color: var(--color-text);"><i class="fas fa-map-marker-alt" style="color:var(--color-primary);margin-right:4px;"></i>${location.location}</strong>
                 </div>
-              `).join('')}
+                <div>
+                  <span style="font-size: 0.7rem; color: var(--color-text-muted); display: block; font-weight: 600;">STATUS DE ENVIO:</span>
+                  <span style="color: var(--color-text); font-weight: 600;">${location.desc}</span>
+                </div>
+              </div>
+
+              ${order.trackingCode ? `
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--color-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span style="font-size: 0.7rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">CÓDIGO DE RASTREIO CORREIOS:</span>
+                    <div style="font-family: monospace; font-size: 1rem; font-weight: 800; color: var(--color-text);">${order.trackingCode}</div>
+                  </div>
+                  <a href="https://rastreamento.correios.com.br/app/index.php?numero=${order.trackingCode}" target="_blank" class="button button-small" style="font-size: 0.75rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-external-link-alt"></i> Rastrear nos Correios
+                  </a>
+                </div>
+              ` : ''}
             </div>
+
+            <!-- Items Purchased -->
+            <div style="margin-bottom: 20px;">
+              <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); margin-bottom: 12px;">
+                Itens do Pedido (${order.items.length})
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                ${order.items.map(item => `
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 12px 14px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                    <div>
+                      <strong style="color: var(--color-text); font-size: 0.9rem;">${item.name}</strong>
+                      <div style="display:flex;gap:6px;margin-top:4px;">
+                        ${item.size ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">TAM: ${item.size}</span>` : ''}
+                        ${item.color ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">COR: ${item.color}</span>` : ''}
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">${item.quantity}x R$ ${item.price.toFixed(2)}</span>
+                      <strong style="color: var(--color-text); font-size: 0.9rem;">R$ ${(item.quantity * item.price).toFixed(2)}</strong>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Payment Details Section -->
+            ${renderPaymentDetails(order)}
+
           </div>
         </div>
-      `).join('')}
+      `}).join('')}
     </div>
   `;
 }
+
+// Global helper to copy text to clipboard with feedback
+window.copyToClipboard = function(text, message) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert(message || 'Copiado com sucesso!');
+  }).catch(() => {
+    alert('Erro ao copiar. Selecione o código manualmente.');
+  });
+};
+
+// Toggle order details expansion
+window.toggleOrderDetails = function(orderId) {
+  const details = document.getElementById(`details-${orderId}`);
+  const icon = document.getElementById(`icon-${orderId}`);
+  const label = document.getElementById(`label-${orderId}`);
+  if (!details) return;
+  const isOpen = details.style.display !== 'none';
+  details.style.display = isOpen ? 'none' : 'block';
+  if (icon) icon.className = isOpen ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+  if (label) label.textContent = isOpen ? 'Ver Detalhes' : 'Ocultar';
+};
+
 
 // Trigger initial load
 loadUserProfile();

@@ -46,7 +46,12 @@ exports.createOrder = async (req, res) => {
       user: req.user.id || req.user._id,
       items: orderItems,
       totalPrice: totalPrice,
-      status: 'pending'
+      status: 'pending',
+      paymentMethod: req.body.paymentMethod || '',
+      shippingMethod: req.body.shippingMethod || '',
+      shippingPrice: req.body.shippingPrice || 0,
+      pixCode: req.body.pixCode || '',
+      boletoCode: req.body.boletoCode || '',
     });
 
     const createdOrder = await order.save();

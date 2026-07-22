@@ -1,4 +1,5 @@
 import { renderNav, renderFooter, initDrawerEvents, updateCartBadge, syncCart, addToCart } from './ui.js?v=2';
+import { calculateFreight, getFreightZoneInfo, FREE_SHIPPING_THRESHOLD } from './freight.js';
 
 const root = document.getElementById('page-root');
 const params = new URLSearchParams(window.location.search);
@@ -123,9 +124,21 @@ async function renderProduct() {
               `}
             </div>
 
-            <div class="shipping-preview">
-              <i class="fas fa-truck"></i>
-              <span>Frete grátis em compras acima de R$ 198</span>
+            <!-- Freight Estimator Widget -->
+            <div class="freight-estimator" id="freight-estimator">
+              <div class="freight-estimator-header">
+                <i class="fas fa-truck"></i>
+                <span>Calcular Frete</span>
+              </div>
+              <div class="freight-estimator-body">
+                <div class="freight-cep-row">
+                  <input type="text" class="freight-cep-input" id="freight-cep" placeholder="00000-000" maxlength="9" inputmode="numeric" />
+                  <button class="freight-calc-btn" id="freight-calc-btn">
+                    <i class="fas fa-search"></i> Calcular
+                  </button>
+                </div>
+                <div id="freight-results"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -154,6 +167,88 @@ async function renderProduct() {
 }
 
 function setupEventListeners(product) {
+  // ===== FREIGHT ESTIMATOR =====
+  const freightCepInput = document.getElementById('freight-cep');
+  const freightCalcBtn = document.getElementById('freight-calc-btn');
+  const freightResultsEl = document.getElementById('freight-results');
+
+  // CEP mask
+  freightCepInput?.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 8);
+    v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
+    // Auto-search when CEP is complete
+    if (v.replace(/\D/g, '').length === 8) {
+      freightCalcBtn?.click();
+    }
+  });
+
+  freightCalcBtn?.addEventListener('click', async () => {
+    const cepRaw = freightCepInput?.value.replace(/\D/g, '');
+    if (!cepRaw || cepRaw.length !== 8) {
+      freightResultsEl.innerHTML = '<div class="freight-error"><i class="fas fa-exclamation-circle"></i> Digite um CEP válido com 8 dígitos.</div>';
+      return;
+    }
+
+    freightCalcBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    freightCalcBtn.disabled = true;
+    freightResultsEl.innerHTML = '';
+
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cepRaw}/json/`);
+      const data = await res.json();
+
+      freightCalcBtn.innerHTML = '<i class="fas fa-search"></i> Calcular';
+      freightCalcBtn.disabled = false;
+
+      if (data.erro) {
+        freightResultsEl.innerHTML = '<div class="freight-error"><i class="fas fa-times-circle"></i> CEP não encontrado. Verifique o número e tente novamente.</div>';
+        return;
+      }
+
+      const state = data.uf;
+      const city = data.localidade;
+      const options = calculateFreight(state, product.price);
+      const zoneInfo = getFreightZoneInfo(state);
+      const isEligibleFree = product.price >= FREE_SHIPPING_THRESHOLD;
+      const needed = (FREE_SHIPPING_THRESHOLD - product.price).toFixed(2);
+
+      freightResultsEl.innerHTML = `
+        <div class="freight-results">
+          <div class="freight-city-tag">
+            <i class="fas fa-map-marker-alt"></i>
+            Entregando em <strong>${city}/${state}</strong>
+            ${zoneInfo ? `<span style="color:var(--color-text-muted);">(${zoneInfo.label})</span>` : ''}
+          </div>
+
+          ${options.map(opt => `
+            <div class="freight-option">
+              <div class="freight-option-info">
+                <div class="freight-option-name">
+                  <i class="fas ${opt.icon}"></i>
+                  ${opt.name}
+                </div>
+                <div class="freight-option-days"><i class="fas fa-clock" style="font-size:0.6rem;"></i> ${opt.days}</div>
+              </div>
+              <div class="freight-option-price ${opt.price === 0 ? 'free' : ''}">
+                ${opt.price === 0 ? 'GRÁTIS' : `R$ ${opt.price.toFixed(2)}`}
+              </div>
+            </div>
+          `).join('')}
+
+          ${isEligibleFree
+            ? '<div class="freight-free-note"><i class="fas fa-check-circle"></i> Este produto já te dá <strong>frete grátis</strong> por ser acima de R$ 198!</div>'
+            : `<div class="freight-not-free-note"><i class="fas fa-tag"></i> Compre R$ ${needed} a mais para ganhar <strong>frete grátis</strong>.</div>`
+          }
+        </div>
+      `;
+    } catch (err) {
+      freightCalcBtn.innerHTML = '<i class="fas fa-search"></i> Calcular';
+      freightCalcBtn.disabled = false;
+      freightResultsEl.innerHTML = '<div class="freight-error"><i class="fas fa-wifi"></i> Erro de conexão. Tente novamente.</div>';
+    }
+  });
+
   // Gallery Logic
   document.querySelectorAll('.thumb-item').forEach(thumb => {
     thumb.addEventListener('click', () => {

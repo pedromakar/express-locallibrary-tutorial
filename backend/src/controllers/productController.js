@@ -71,32 +71,62 @@ function isDbConnected() {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, color, size } = req.query;
+
+    const filterFallback = (data) => {
+      let filtered = [...data];
+      if (category) {
+        filtered = filtered.filter((p) => p.category?.toLowerCase() === category.toLowerCase());
+      }
+      if (color) {
+        filtered = filtered.filter((p) => p.colors?.some(c => c.name?.toLowerCase().includes(color.toLowerCase())));
+      }
+      if (size) {
+        filtered = filtered.filter((p) => p.sizes?.some(s => s.toLowerCase() === size.toLowerCase()));
+      }
+      if (search) {
+        const s = search.toLowerCase();
+        filtered = filtered.filter((p) =>
+          p.name?.toLowerCase().includes(s) ||
+          p.description?.toLowerCase().includes(s) ||
+          p.category?.toLowerCase().includes(s) ||
+          p.sizes?.some(sz => sz.toLowerCase().includes(s)) ||
+          p.colors?.some(c => c.name?.toLowerCase().includes(s))
+        );
+      }
+      return filtered;
+    };
 
     if (!isDbConnected()) {
-      let data = fallbackProducts;
-      if (category) data = data.filter((p) => p.category === category);
-      if (search) data = data.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
-      return res.json(data);
+      return res.json(filterFallback(fallbackProducts));
     }
 
     const filter = {};
     if (category) {
-      filter.category = category;
+      filter.category = { $regex: new RegExp(`^${category}$`, 'i') };
+    }
+    if (color) {
+      filter['colors.name'] = { $regex: color, $options: 'i' };
+    }
+    if (size) {
+      filter.sizes = { $regex: new RegExp(`^${size}$`, 'i') };
     }
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      const searchRegex = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+        { category: searchRegex },
+        { badge: searchRegex },
+        { sizes: searchRegex },
+        { 'colors.name': searchRegex },
+      ];
     }
 
     const products = await Product.find(filter).lean();
     res.json(products);
   } catch (err) {
-    // If DB query fails, return filtered fallback data
-    const { category, search } = req.query;
-    let data = fallbackProducts;
-    if (category) data = data.filter((p) => p.category === category);
-    if (search) data = data.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
-    res.json(data);
+    res.json([]);
   }
 };
 

@@ -28,9 +28,15 @@ const orderSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['pending', 'paid', 'shipped', 'canceled'],
+    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'canceled'],
     default: 'pending',
-  }
+  },
+  paymentMethod: { type: String, default: '' },
+  shippingMethod: { type: String, default: '' },
+  shippingPrice: { type: Number, default: 0 },
+  pixCode: { type: String, default: '' },
+  boletoCode: { type: String, default: '' },
+  trackingCode: { type: String, default: '' },
 }, {
   timestamps: true,
 });

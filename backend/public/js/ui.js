@@ -257,24 +257,35 @@ export function renderNav(activePage) {
     <div class="search-overlay" id="search-overlay">
       <button class="search-overlay-close" id="search-overlay-close"><i class="fas fa-times"></i></button>
       <div class="search-overlay-input-wrapper">
-        <input type="text" class="search-overlay-input" id="search-overlay-input" placeholder="Pesquisar produtos..." autocomplete="off" />
+        <input type="text" class="search-overlay-input" id="search-overlay-input" placeholder="Pesquisar por nome, cor (Preto, Azul...), tamanho (P, M, G)..." autocomplete="off" />
       </div>
       <div class="search-overlay-body" id="search-overlay-body">
         <div id="search-default-content">
-          <p class="search-section-title">Buscas populares</p>
-          <div class="search-popular-list">
-            <a href="/products?search=regata">Regata</a>
-            <a href="/products?search=shorts">Shorts</a>
-            <a href="/products?search=legging">Legging</a>
-            <a href="/products?search=moletom">Moletom</a>
-            <a href="/products?search=dry fit">Dry Fit</a>
+          <p class="search-section-title"><i class="fas fa-palette"></i> Filtrar por Cor</p>
+          <div class="search-chips" style="margin-bottom: 20px;">
+            <button class="search-chip search-filter-btn" data-search="Preto"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#000;margin-right:6px;border:1px solid #666;"></span>Preto</button>
+            <button class="search-chip search-filter-btn" data-search="Branco"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-right:6px;border:1px solid #ccc;"></span>Branco</button>
+            <button class="search-chip search-filter-btn" data-search="Cinza"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#888;margin-right:6px;"></span>Cinza</button>
+            <button class="search-chip search-filter-btn" data-search="Azul"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0d6efd;margin-right:6px;"></span>Azul</button>
+            <button class="search-chip search-filter-btn" data-search="Verde"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#198754;margin-right:6px;"></span>Verde</button>
+            <button class="search-chip search-filter-btn" data-search="Vermelho"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#dc3545;margin-right:6px;"></span>Vermelho</button>
           </div>
-          <p class="search-section-title">Categorias</p>
-          <div class="search-chips">
-            <a href="/products" class="search-chip">Masculino</a>
-            <a href="/products" class="search-chip">Feminino</a>
-            <a href="/category.html?id=Kits" class="search-chip">Kits</a>
-            <a href="/products" class="search-chip">Acessórios</a>
+
+          <p class="search-section-title"><i class="fas fa-ruler-combined"></i> Filtrar por Tamanho</p>
+          <div class="search-chips" style="margin-bottom: 20px;">
+            <button class="search-chip search-filter-btn" data-search="P">Tamanho P</button>
+            <button class="search-chip search-filter-btn" data-search="M">Tamanho M</button>
+            <button class="search-chip search-filter-btn" data-search="G">Tamanho G</button>
+            <button class="search-chip search-filter-btn" data-search="GG">Tamanho GG</button>
+          </div>
+
+          <p class="search-section-title"><i class="fas fa-fire"></i> Buscas Populares</p>
+          <div class="search-popular-list">
+            <button class="search-filter-btn" data-search="Regata" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px 0;font-size:0.9rem;">Regatas</button>
+            <button class="search-filter-btn" data-search="Moletom" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px 0;font-size:0.9rem;">Moletons</button>
+            <button class="search-filter-btn" data-search="Legging" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px 0;font-size:0.9rem;">Leggings</button>
+            <button class="search-filter-btn" data-search="Shorts" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px 0;font-size:0.9rem;">Shorts</button>
+            <button class="search-filter-btn" data-search="Dry Fit" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:4px 0;font-size:0.9rem;">Dry Fit</button>
           </div>
         </div>
         <div id="search-results-content" style="display: none;"></div>
@@ -679,50 +690,57 @@ export function initDrawerEvents() {
   const defaultContent = document.getElementById('search-default-content');
   const resultsContent = document.getElementById('search-results-content');
 
-  searchInput?.addEventListener('input', () => {
-    clearTimeout(searchDebounceTimer);
-    const query = searchInput.value.trim();
-
+  function triggerLiveSearch(query) {
+    if (searchInput) searchInput.value = query;
     if (!query) {
       if (defaultContent) defaultContent.style.display = 'block';
       if (resultsContent) { resultsContent.style.display = 'none'; resultsContent.innerHTML = ''; }
       return;
     }
 
-    searchDebounceTimer = setTimeout(async () => {
-      if (defaultContent) defaultContent.style.display = 'none';
-      if (resultsContent) {
-        resultsContent.style.display = 'block';
-        resultsContent.innerHTML = '<p style="text-align: center; padding: 24px 0; color: var(--color-text-muted);">Buscando...</p>';
-      }
+    if (defaultContent) defaultContent.style.display = 'none';
+    if (resultsContent) {
+      resultsContent.style.display = 'block';
+      resultsContent.innerHTML = '<p style="text-align: center; padding: 24px 0; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i> Buscando produtos...</p>';
+    }
 
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/products?search=${encodeURIComponent(query)}`);
         const products = await res.json();
 
-        if (products.length === 0) {
+        if (!products || products.length === 0) {
           resultsContent.innerHTML = `
-            <p style="text-align: center; padding: 24px 0; color: var(--color-text-muted);">Nenhum produto encontrado para "${query}"</p>
-            <p class="search-section-title">Tente buscar por</p>
-            <div class="search-chips">
-              <a href="/products?search=regata" class="search-chip">Regata</a>
-              <a href="/products?search=shorts" class="search-chip">Shorts</a>
-              <a href="/products?search=moletom" class="search-chip">Moletom</a>
+            <div style="text-align: center; padding: 32px 0;">
+              <i class="fas fa-search" style="font-size: 2rem; color: var(--color-text-muted); margin-bottom: 12px;"></i>
+              <p style="color: var(--color-text-muted); margin-bottom: 16px;">Nenhum produto encontrado para "${query}"</p>
+              <button class="button button-small" onclick="document.getElementById('search-overlay-input').value=''; document.getElementById('search-default-content').style.display='block'; document.getElementById('search-results-content').style.display='none';">Ver categorias</button>
             </div>
           `;
         } else {
           resultsContent.innerHTML = `
+            <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 16px;">
+              ${products.length} resultado(s) encontrado(s)
+            </div>
             <div class="search-results-grid">
-              ${products.slice(0, 4).map(p => `
-                <a href="/product?id=${p._id}" class="search-result-item">
-                  <img src="${p.image || (p.images && p.images[0]) || ''}" alt="${p.name}" />
-                  <h4>${p.name}</h4>
-                  <span class="search-result-price">R$ ${p.price.toFixed(2)}</span>
+              ${products.slice(0, 6).map(p => `
+                <a href="/product?id=${p._id}" class="search-result-item" style="display:flex;gap:16px;align-items:center;padding:12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:#fff;text-decoration:none;">
+                  <img src="${p.image || (p.images && p.images[0]) || ''}" alt="${p.name}" style="width:70px;height:70px;object-fit:cover;border-radius:4px;" />
+                  <div style="flex:1;">
+                    <h4 style="font-size:0.9rem;font-weight:700;color:var(--color-text);margin-bottom:4px;">${p.name}</h4>
+                    <span class="search-result-price" style="font-weight:800;color:var(--color-text);">R$ ${p.price.toFixed(2)}</span>
+                    
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+                      ${p.sizes && p.sizes.length ? p.sizes.map(s => `<span style="font-size:0.65rem;font-weight:700;background:#e9ecef;color:#495057;padding:2px 5px;border-radius:3px;">${s}</span>`).join('') : ''}
+                      ${p.colors && p.colors.length ? p.colors.map(c => `<span style="font-size:0.65rem;font-weight:700;background:#343a40;color:#fff;padding:2px 5px;border-radius:3px;">${c.name}</span>`).join('') : ''}
+                    </div>
+                  </div>
                 </a>
               `).join('')}
             </div>
-            ${products.length > 4 ? `
-              <a href="/products?search=${encodeURIComponent(query)}" class="search-view-all">
+            ${products.length > 6 ? `
+              <a href="/products?search=${encodeURIComponent(query)}" class="search-view-all" style="display:block;text-align:center;margin-top:20px;font-size:0.875rem;font-weight:700;color:var(--color-primary);">
                 Ver todos os ${products.length} resultados →
               </a>
             ` : ''}
@@ -731,7 +749,22 @@ export function initDrawerEvents() {
       } catch (err) {
         resultsContent.innerHTML = '<p style="text-align: center; padding: 24px 0; color: var(--color-error);">Erro ao buscar produtos.</p>';
       }
-    }, 300);
+    }, 250);
+  }
+
+  searchInput?.addEventListener('input', () => {
+    triggerLiveSearch(searchInput.value.trim());
+  });
+
+  // Bind search filter chips (size, color, popular)
+  document.querySelectorAll('.search-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const searchTerm = btn.dataset.search;
+      if (searchTerm) {
+        triggerLiveSearch(searchTerm);
+      }
+    });
   });
 
   // ─── Button Bindings ───
