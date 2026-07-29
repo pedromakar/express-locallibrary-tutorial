@@ -122,6 +122,15 @@ async function renderProduct() {
                   <i class="fas fa-times-circle"></i> PRODUTO INDISPONÍVEL
                 </button>
               `}
+
+              <a href="https://wa.me/5571999313160?text=Ol%C3%A1%2C%20tenho%20d%C3%BAvidas%20sobre%20a%20${encodeURIComponent(product.name)}" class="whatsapp-buy-btn" target="_blank">
+                <i class="fab fa-whatsapp"></i> Dúvidas? Compre pelo WhatsApp
+              </a>
+              
+              <div class="easy-return-banner">
+                <i class="fas fa-box-open"></i>
+                <span>Primeira troca <strong>gratuita</strong> e sem burocracia. Troque Fácil MD!</span>
+              </div>
             </div>
 
             <!-- Freight Estimator Widget -->
@@ -265,6 +274,30 @@ function setupEventListeners(product) {
       btn.classList.add('active');
       selectedColor = btn.dataset.name;
       document.getElementById('selected-color-name').textContent = selectedColor;
+
+      // Update gallery if color has specific images
+      const colorObj = product.colors?.find(c => c.name === selectedColor);
+      if (colorObj && colorObj.images && colorObj.images.length > 0) {
+        document.getElementById('main-product-image').src = colorObj.images[0];
+        
+        const thumbnailGrid = document.querySelector('.thumbnail-grid');
+        if (thumbnailGrid) {
+          thumbnailGrid.innerHTML = colorObj.images.map((img, idx) => `
+            <div class="thumb-item ${idx === 0 ? 'active' : ''}" data-src="${img}">
+              <img src="${img}" alt="Thumbnail ${idx + 1}" />
+            </div>
+          `).join('');
+
+          // Re-bind thumbnail clicks
+          thumbnailGrid.querySelectorAll('.thumb-item').forEach(thumb => {
+            thumb.addEventListener('click', () => {
+              thumbnailGrid.querySelector('.thumb-item.active')?.classList.remove('active');
+              thumb.classList.add('active');
+              document.getElementById('main-product-image').src = thumb.dataset.src;
+            });
+          });
+        }
+      }
     });
   });
 

@@ -369,6 +369,21 @@ async function renderDrawerItems() {
     `;
   }).join('');
 
+  // Upsell Dinâmico
+  const upsellProduct = allProducts.find(p => p.price < 100) || allProducts[0];
+  if (upsellProduct && !cartKeys.some(key => cart[key].productId === upsellProduct._id)) {
+    container.innerHTML += `
+      <div class="cart-upsell-box">
+        <img src="${upsellProduct.image || (upsellProduct.images && upsellProduct.images[0]) || ''}" alt="${upsellProduct.name}" class="cart-upsell-img" />
+        <div class="cart-upsell-info">
+          <div class="cart-upsell-title" style="font-size: 0.75rem;">Sugestão: ${upsellProduct.name}</div>
+          <div class="cart-upsell-price">R$ ${upsellProduct.price.toFixed(2)}</div>
+        </div>
+        <button class="cart-upsell-btn" onclick="addToCart('${upsellProduct._id || upsellProduct.id}', 1, 'M'); event.preventDefault();">Adicionar</button>
+      </div>
+    `;
+  }
+
   document.getElementById('drawer-subtotal').textContent = `R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const progress = Math.min((subtotal / 198) * 100, 100);
   document.getElementById('shipping-progress').style.width = `${progress}%`;
@@ -892,11 +907,17 @@ export function renderProductCard(product) {
 
   return `
     <article class="card product-card">
-      <div class="product-image">
+      <div class="product-image product-card-image-wrap">
         ${badgeHtml}
         ${image ? `<img src="${image}" alt="${product.name}" />` : '<span>Sem imagem</span>'}
         <div class="product-card-overlay">
            <a class="button small" href="/product?id=${productId}">VER DETALHES</a>
+        </div>
+        <div class="quick-buy-overlay">
+           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'P'); event.preventDefault();">P</button>
+           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'M'); event.preventDefault();">M</button>
+           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'G'); event.preventDefault();">G</button>
+           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'GG'); event.preventDefault();">GG</button>
         </div>
       </div>
       <div class="card-body">

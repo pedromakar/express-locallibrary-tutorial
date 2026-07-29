@@ -1,8 +1,9 @@
-import { renderNav, renderFooter } from './ui.js';
+import { renderNav, renderFooter, initDrawerEvents, updateCartBadge } from './ui.js';
 
 const root = document.getElementById('page-root');
 root.innerHTML = `
   ${renderNav('login')}
+  ${renderNav('register')}
   <main class="content">
     <section class="box form-box">
       <h1>Cadastro</h1>
@@ -28,6 +29,9 @@ root.innerHTML = `
   </main>
   ${renderFooter()}
 `;
+
+initDrawerEvents();
+updateCartBadge();
 
 const registerForm = document.getElementById('register-form');
 const registerMessage = document.getElementById('register-message');

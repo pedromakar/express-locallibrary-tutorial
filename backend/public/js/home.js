@@ -183,6 +183,23 @@ function render(products, categories) {
         </div>
       </section>
 
+      <!-- Kits e Bundles Carousel -->
+      <section class="section" style="background-color: var(--color-bg); padding-top: 20px; padding-bottom: 40px;">
+        <div class="container-custom">
+          <div style="text-align: center; margin-bottom: 40px;">
+            <p style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--color-primary); margin-bottom: 6px;">COMPRE JUNTO E ECONOMIZE</p>
+            <h2 class="text-uppercase-bold" style="font-size: 1.8rem;">Kits e Bundles</h2>
+          </div>
+          
+          <div class="grid-list">
+            ${products.slice(0, 4).map(p => { 
+                const kitProduct = { ...p, category: 'Kits', name: 'Kit ' + p.name, price: p.price * 2.5 }; 
+                return renderProductCard(kitProduct); 
+             }).join('')}
+          </div>
+        </div>
+      </section>
+
       <!-- Products Grid (Drops em Destaque) -->
       <section class="section section--alt">
         <div class="container-custom">

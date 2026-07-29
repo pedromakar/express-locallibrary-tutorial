@@ -9,6 +9,76 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const products = [
   {
+    name: 'Camiseta Oversized Hunter',
+    category: 'Camisetas',
+    price: 149.9,
+    description: 'Camiseta Oversized Hunter que combina conforto absoluto com estilo. Tecido de alta performance permite movimento livre durante treinos intensos e uso casual. Design amplo oferece liberdade total de movimento sem comprometer a qualidade. Perfeita para quem busca peça versátil que transita entre academia e rua com confiança.',
+    images: [
+      'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Frente.jpg?v=1784043294&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_8.jpg?v=1784315506&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_6.jpg?v=1784315508&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Costas.jpg?v=1784043294&width=832'
+    ],
+    countInStock: 25,
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      {
+        name: 'Azul Marinho',
+        hex: '#000080',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Frente.jpg?v=1784043294&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_8.jpg?v=1784315506&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_6.jpg?v=1784315508&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Costas.jpg?v=1784043294&width=832'
+        ]
+      },
+      {
+        name: 'Verde Musgo',
+        hex: '#4A5D23',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterVerdeMusgo-Frente.jpg?v=1784044429&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Verde_Musgo_Oversized_07jul26_Fc_7.jpg?v=1784315736&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Verde_Musgo_Oversized_07jul26_Fc_6.jpg?v=1784315736&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterVerdeMusgo-Costas.jpg?v=1784044429&width=832'
+        ]
+      }
+    ],
+    benefits: ['Conforto Absoluto', 'Alta Performance', 'Design Amplo', 'Versatilidade']
+  },
+  {
+    name: 'Camiseta Apex Dry Evolution',
+    category: 'Camisetas',
+    price: 149.9,
+    description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
+    images: [
+      'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
+    ],
+    countInStock: 25,
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      {
+        name: 'Cinza',
+        hex: '#808080',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
+        ]
+      },
+      {
+        name: 'Azul Marinho',
+        hex: '#000080',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050157&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc_1.jpg?v=1775050157&width=832'
+        ]
+      }
+    ],
+    benefits: ['Sem Costura (Seamless)', 'Tecnologia Dry', 'Modelagem Anatômica', 'Secagem Rápida']
+  },
+  {
     name: 'Regata Canelada "Apex Cut"',
     category: 'Regatas',
     price: 99.9,

@@ -854,6 +854,13 @@ window.viewCustomerDetails = async function(userId) {
               <label style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Endereço de E-mail</label>
               <input type="email" id="admin-user-email-input" class="admin-form-control" value="${user.email}" style="padding: 6px; font-size: 0.85rem;" required />
             </div>
+            <div>
+              <label style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Nível de Acesso (Cargo)</label>
+              <select id="admin-user-role-input" class="admin-form-control" style="padding: 6px; font-size: 0.85rem;">
+                <option value="user" ${user.role === 'user' ? 'selected' : ''}>Usuário Cliente</option>
+                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Administrador</option>
+              </select>
+            </div>
             <button type="submit" class="admin-btn admin-btn-small admin-btn-accent" style="margin-top: 6px; align-self: flex-start;">Salvar Alterações</button>
           </div>
         </form>
@@ -930,6 +937,7 @@ window.viewCustomerDetails = async function(userId) {
     e.preventDefault();
     const username = document.getElementById('admin-user-username-input').value.trim();
     const email = document.getElementById('admin-user-email-input').value.trim();
+    const role = document.getElementById('admin-user-role-input').value;
 
     try {
       const res = await fetch(`/api/users/${userId}`, {
@@ -938,14 +946,14 @@ window.viewCustomerDetails = async function(userId) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ username, email, avatar: updatedAvatar })
+        body: JSON.stringify({ username, email, avatar: updatedAvatar, role })
       });
 
       if (res.ok) {
         showToast('Perfil do cliente atualizado com sucesso!');
         const updatedData = await res.json();
         // Update local users list array
-        users = users.map(u => u._id === userId ? { ...u, username: updatedData.user.username, email: updatedData.user.email, avatar: updatedData.user.avatar } : u);
+        users = users.map(u => u._id === userId ? { ...u, username: updatedData.user.username, email: updatedData.user.email, avatar: updatedData.user.avatar, role: updatedData.user.role } : u);
         closeAdminModal();
         renderCustomers(document.getElementById('admin-content-pane'));
       } else {

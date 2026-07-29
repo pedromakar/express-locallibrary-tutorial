@@ -4,6 +4,41 @@ const Product = require('../models/product');
 // Fallback static data used when MongoDB is unavailable
 const fallbackProducts = [
   {
+    _id: 'apex_dry_1',
+    name: 'Camiseta Apex Dry Evolution',
+    category: 'Camisetas',
+    price: 149.9,
+    description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
+    image: 'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
+    images: [
+      'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
+      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
+    ],
+    countInStock: 25,
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      {
+        name: 'Cinza',
+        hex: '#808080',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
+        ]
+      },
+      {
+        name: 'Azul Marinho',
+        hex: '#000080',
+        images: [
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050157&width=832',
+          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc_1.jpg?v=1775050157&width=832'
+        ]
+      }
+    ],
+    benefits: ['Sem Costura (Seamless)', 'Tecnologia Dry', 'Modelagem Anatômica', 'Secagem Rápida']
+  },
+  {
     _id: 'p1',
     name: 'Top Active Mesh',
     category: 'Tops e Camisetas',

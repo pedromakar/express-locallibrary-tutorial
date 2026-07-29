@@ -120,7 +120,7 @@ exports.updateUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'Usuário não encontrado' });
 
-    const { username, email, avatar } = req.body;
+    const { username, email, avatar, role } = req.body;
 
     if (username) {
       const normalizedUsername = username.trim().toLowerCase();
@@ -141,6 +141,7 @@ exports.updateUser = async (req, res) => {
     }
 
     if (avatar !== undefined) user.avatar = avatar;
+    if (role !== undefined) user.role = role;
 
     await user.save();
 

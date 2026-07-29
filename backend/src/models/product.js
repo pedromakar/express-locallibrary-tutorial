@@ -12,7 +12,8 @@ const productSchema = new mongoose.Schema({
   colors: [
     {
       name: { type: String },
-      hex: { type: String }
+      hex: { type: String },
+      images: [{ type: String }]
     }
   ],
   benefits: [{ type: String }], // e.g., ['Tecido Respirável', 'Secagem Rápida']
