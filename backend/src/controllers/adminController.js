@@ -152,6 +152,10 @@ exports.getStats = async (req, res) => {
         outOfStock,
         lowStock,
       },
+      totalRevenue: revenueTotal,
+      totalOrders: allOrders.length,
+      totalUsers: totalCustomers,
+      abandonedCartsCount: abandonedCount,
       avgTicket,
       topProducts,
       topCategories,
@@ -316,6 +320,14 @@ exports.getReports = async (req, res) => {
       salesByDay,
       salesByMonth,
       categoryData,
+      billingOverTime: salesByMonth.map(m => ({
+        month: m.month,
+        total: m.revenue
+      })),
+      categorySales: categoryData.map(c => ({
+        category: c.name,
+        count: c.revenue
+      })),
     });
   } catch (err) {
     res.status(500).json({ message: 'Erro ao gerar relatórios', error: err.message });

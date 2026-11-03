@@ -13,6 +13,18 @@ router.get('/orders/:userId', auth, orderController.getOrdersByUser);
 // GET /api/order/:id
 router.get('/order/:id', auth, orderController.getOrderById);
 
+// RASTREAMENTO PÚBLICO EM TEMPO REAL
+// GET /api/orders/track/:query
+router.get('/orders/track/:query', orderController.trackOrder);
+
+// CÁLCULO DE FRETE EM TEMPO REAL
+// POST /api/shipping/calculate
+router.post('/shipping/calculate', orderController.calculateShipping);
+
+// WEBHOOK BOT DE WHATSAPP
+// POST /api/webhooks/whatsapp
+router.post('/webhooks/whatsapp', orderController.handleWhatsAppWebhook);
+
 // ADMIN ROUTES
 // GET /api/admin/orders
 router.get('/admin/orders', auth, admin, orderController.getAllOrders);

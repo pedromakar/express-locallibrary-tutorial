@@ -4,8 +4,10 @@ import productService from '../../services/productService';
 import api from '../../services/api';
 import ProductCard from '../../components/products/ProductCard';
 import CategoryCard from '../../components/products/CategoryCard';
+import { useStoreSettings } from '../../contexts/StoreSettingsContext';
 
 const Home = () => {
+  const { settings } = useStoreSettings();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,12 +38,18 @@ const Home = () => {
       'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80', // Lifestyle
     ];
 
-    return catList.map((category, index) => ({
-      id: encodeURIComponent(category.name),
-      title: category.name,
-      description: `${category.count} produto(s) nesta categoria`,
-      image: categoryPlaceholderImages[index % categoryPlaceholderImages.length],
-    }));
+    const catImages = settings?.categoryImages || {};
+
+    return catList.map((category, index) => {
+      // Check if custom image exists in settings
+      const customImg = typeof catImages.get === 'function' ? catImages.get(category.name) : catImages[category.name];
+      return {
+        id: encodeURIComponent(category.name),
+        title: category.name,
+        description: `${category.count} produto(s) nesta categoria`,
+        image: customImg || categoryPlaceholderImages[index % categoryPlaceholderImages.length],
+      };
+    });
   };
 
   if (loading) {
@@ -57,14 +65,17 @@ const Home = () => {
   return (
     <div className="content">
       {/* Hero Section */}
-      <section className="hero premium-hero">
+      <section
+        className="hero premium-hero"
+        style={settings?.heroBannerUrl ? { backgroundImage: `url(${settings.heroBannerUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+      >
         <div className="hero-overlay"></div>
         <div className="hero-content-box">
-          <p className="eyebrow">Coleção Apex Pro - A Melhor do Brasil</p>
-          <h1 className="text-uppercase-bold">O INVERNO É O NOSSO PONTO ZERO</h1>
-          <p>Alta performance e isolamento térmico inteligente. Desenvolvido para superar o frio com atitude.</p>
+          <p className="eyebrow">{settings?.heroEyebrow || 'Coleção Apex Pro - A Melhor do Brasil'}</p>
+          <h1 className="text-uppercase-bold">{settings?.heroTitle || 'O INVERNO É O NOSSO PONTO ZERO'}</h1>
+          <p>{settings?.heroSubtitle || 'Alta performance e isolamento térmico inteligente. Desenvolvido para superar o frio com atitude.'}</p>
           <div className="button-row" style={{ marginTop: '24px' }}>
-            <Link className="button" to="/products?category=Moletom">VER COLEÇÃO</Link>
+            <Link className="button" to="/products">{settings?.heroButtonText || 'VER COLEÇÃO'}</Link>
           </div>
         </div>
       </section>

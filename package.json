@@ -1,0 +1,13 @@
+{
+  "name": "express-locallibrary-tutorial",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx --yes concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "start": "npx --yes concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "start:backend": "npm run dev --prefix backend",
+    "start:frontend": "npm run dev --prefix frontend"
+  }
+}

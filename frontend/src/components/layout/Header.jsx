@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useStoreSettings } from '../../contexts/StoreSettingsContext';
 
 const megaMenuData = {
   masculino: {
@@ -106,6 +107,7 @@ const Header = ({
 }) => {
   const { token, user } = useAuth();
   const { itemCount } = useCart();
+  const { settings } = useStoreSettings();
   const [activeMega, setActiveMega] = useState(null);
   const [isCompact, setIsCompact] = useState(false);
   const navigate = useNavigate();
@@ -145,7 +147,7 @@ const Header = ({
     <>
       {/* Announcement Bar */}
       <div className={`announcement-bar ${isCompact ? 'hidden' : ''}`} id="announcement-bar">
-        <p>FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK NA PRIMEIRA COMPRA</p>
+        <p>{settings?.announcementText || 'FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK NA PRIMEIRA COMPRA'}</p>
       </div>
 
       {/* Header */}
@@ -173,7 +175,13 @@ const Header = ({
 
           {/* Logo (Centered) */}
           <div className="brand-link">
-            <Link to="/">MD ESSENTIAL</Link>
+            <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt={settings.storeName || 'Store Logo'} style={{ maxHeight: '36px', objectFit: 'contain' }} />
+              ) : (
+                settings?.storeName || 'MD ESSENTIAL'
+              )}
+            </Link>
           </div>
 
           {/* Utility Icons */}

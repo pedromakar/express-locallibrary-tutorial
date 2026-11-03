@@ -1038,17 +1038,24 @@ function renderOrdersTabContent() {
               </div>
               <div style="display: flex; flex-direction: column; gap: 10px;">
                 ${order.items.map(item => `
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 12px 14px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 14px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border); flex-wrap: wrap; gap: 12px;">
                     <div>
-                      <strong style="color: var(--color-text); font-size: 0.9rem;">${item.name}</strong>
-                      <div style="display:flex;gap:6px;margin-top:4px;">
+                      <strong style="color: var(--color-text); font-size: 0.95rem;">
+                        <a href="/product.html?id=${item.productId}" style="color: inherit; text-decoration: none;" title="Ver produto">${item.name}</a>
+                      </strong>
+                      <div style="display:flex;gap:6px;margin:6px 0;">
                         ${item.size ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">TAM: ${item.size}</span>` : ''}
                         ${item.color ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">COR: ${item.color}</span>` : ''}
                       </div>
+                      ${(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered') ? `
+                        <a href="/product.html?id=${item.productId}#reviews" class="button button-small" style="background: #28a745; color: #fff; border: none; font-size: 0.75rem; padding: 6px 12px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                          <i class="fas fa-star" style="color: #ffc107;"></i> AVALIAR PRODUTO
+                        </a>
+                      ` : ''}
                     </div>
                     <div style="text-align: right;">
                       <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">${item.quantity}x R$ ${item.price.toFixed(2)}</span>
-                      <strong style="color: var(--color-text); font-size: 0.9rem;">R$ ${(item.quantity * item.price).toFixed(2)}</strong>
+                      <strong style="color: var(--color-text); font-size: 0.95rem;">R$ ${(item.quantity * item.price).toFixed(2)}</strong>
                     </div>
                   </div>
                 `).join('')}

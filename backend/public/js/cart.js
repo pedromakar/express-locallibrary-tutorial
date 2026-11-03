@@ -48,19 +48,24 @@ async function renderCart() {
     const itemTotal = product.price * item.quantity;
     subtotal += itemTotal;
 
+    const productUrl = `/product.html?id=${product._id || product.id}`;
+
     return `
       <div class="cart-item">
         <div class="cart-item-info">
-          <div class="cart-image">
-            <img src="${product.image || product.images[0]}" alt="${product.name}" />
-          </div>
+          <a href="${productUrl}" class="cart-image" title="Ver ${product.name}">
+            <img src="${product.image || product.images[0]}" alt="${product.name}" style="border-radius: var(--radius-sm);" />
+          </a>
           <div>
-            <strong>${product.name}</strong>
-            <p>R$ ${product.price.toFixed(2)}</p>
-            <div class="item-variations">
-              ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
-              ${item.color ? `<span class="item-variation">${item.color}</span>` : ''}
+            <strong><a href="${productUrl}" style="color: inherit; text-decoration: none;">${product.name}</a></strong>
+            <p style="margin: 2px 0; font-weight: 700;">R$ ${product.price.toFixed(2)}</p>
+            <div class="item-variations" style="display: flex; gap: 6px; margin: 4px 0;">
+              ${item.size ? `<span class="item-variation" style="font-size: 0.7rem; font-weight: 700; background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px;">Tam: ${item.size}</span>` : ''}
+              ${item.color ? `<span class="item-variation" style="font-size: 0.7rem; font-weight: 700; background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px;">Cor: ${item.color}</span>` : ''}
             </div>
+            <span style="font-size: 0.75rem; color: #28a745; font-weight: 700;">
+              <i class="fas fa-check-circle" style="font-size: 0.7rem;"></i> ${product.countInStock} disponíveis em estoque
+            </span>
           </div>
         </div>
         <div class="cart-controls">

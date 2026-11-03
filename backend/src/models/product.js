@@ -18,6 +18,18 @@ const productSchema = new mongoose.Schema({
   ],
   benefits: [{ type: String }], // e.g., ['Tecido Respirável', 'Secagem Rápida']
   measurementsTable: { type: String }, // URL to a measurement table image or a string
+  rating: { type: Number, default: 5 },
+  numReviews: { type: Number, default: 0 },
+  reviews: [
+    {
+      name: { type: String, required: true },
+      rating: { type: Number, required: true, default: 5 },
+      comment: { type: String, required: true },
+      images: [{ type: String }],
+      verifiedPurchase: { type: Boolean, default: true },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ]
 }, {
   timestamps: true,
 });

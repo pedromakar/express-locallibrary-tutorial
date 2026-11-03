@@ -259,3 +259,126 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+/**
+ * GET /api/products/:id/can-review
+ * Verifica se o usuário atual comprou o produto e tem autorização para avaliar
+ */
+exports.checkCanReview = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ canReview: false, message: 'Produto não encontrado' });
+
+    if (!req.user) {
+      return res.json({
+        canReview: false,
+        reason: 'not_logged_in',
+        message: 'Faça login com a conta que realizou a compra para avaliar este produto.'
+      });
+    }
+
+    const userId = req.user.id || req.user._id;
+    const Order = require('../models/order');
+
+    // Verifica se o usuário tem algum pedido contendo este produto
+    const order = await Order.findOne({
+      user: userId,
+      'items.productId': product._id
+    });
+
+    if (!order && !req.user.isAdmin) {
+      return res.json({
+        canReview: false,
+        reason: 'not_purchased',
+        message: 'Apenas clientes que compraram este produto podem avaliá-lo.'
+      });
+    }
+
+    return res.json({
+      canReview: true,
+      reason: 'verified_purchase',
+      username: req.user.username || 'Cliente',
+      orderId: order ? order._id : 'admin_review'
+    });
+  } catch (err) {
+    res.status(500).json({ canReview: false, message: err.message });
+  }
+};
+
+/**
+ * POST /api/products/:id/reviews
+ * Cadastra avaliação com verificação de compra obrigatória (Shopee style)
+ */
+exports.createProductReview = async (req, res) => {
+  try {
+    const { rating, comment, name, images, imageUrl } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Produto não encontrado' });
+
+    // 1. Obrigatório estar autenticado
+    if (!req.user) {
+      return res.status(401).json({
+        message: 'Você precisa estar conectado à sua conta para avaliar este produto.'
+      });
+    }
+
+    // 2. Validação de compra comprovada no banco
+    const userId = req.user.id || req.user._id;
+    const Order = require('../models/order');
+    const hasPurchased = await Order.findOne({
+      user: userId,
+      'items.productId': product._id
+    });
+
+    if (!hasPurchased && !req.user.isAdmin) {
+      return res.status(403).json({
+        message: 'Apenas clientes que compraram este produto podem avaliá-lo.'
+      });
+    }
+
+    // 3. Validação de nota e mínimo de caracteres (mínimo 15 caracteres)
+    if (!rating) {
+      return res.status(400).json({ message: 'Por favor, selecione uma nota de 1 a 5 estrelas.' });
+    }
+
+    const cleanComment = (comment || '').trim();
+    if (cleanComment.length < 15) {
+      return res.status(400).json({
+        message: `Seu comentário possui ${cleanComment.length} caracteres. O mínimo obrigatório é de 15 caracteres para detalhar sua experiência com o produto.`
+      });
+    }
+
+    // 4. Processamento de fotos enviadas (upload ou URL)
+    let reviewImages = [];
+    if (Array.isArray(images) && images.length > 0) {
+      reviewImages = images.filter(Boolean);
+    } else if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
+      reviewImages = [imageUrl.trim()];
+    }
+
+    const reviewName = name || req.user.username || 'Cliente Verificado';
+
+    const review = {
+      name: reviewName,
+      rating: Number(rating),
+      comment: cleanComment,
+      images: reviewImages,
+      verifiedPurchase: true,
+      createdAt: new Date(),
+    };
+
+    if (!product.reviews) {
+      product.reviews = [];
+    }
+
+    product.reviews.unshift(review);
+    product.numReviews = product.reviews.length;
+    product.rating =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+
+    await product.save();
+    res.status(201).json({ message: 'Avaliação enviada com sucesso! Obrigado pelo feedback.', product });
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao registrar avaliação', error: err.message });
+  }
+};

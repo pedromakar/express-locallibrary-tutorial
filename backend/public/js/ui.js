@@ -144,6 +144,7 @@ export function renderNav(activePage) {
 
         <!-- Utility Icons -->
         <div class="nav-utility">
+          <a href="/tracking" class="icon-button ${activePage === 'tracking' ? 'active' : ''}" title="Rastrear Pedido"><i class="fas fa-truck"></i></a>
           <button id="search-toggle" class="icon-button"><i class="fas fa-search"></i></button>
           ${token ? `
             <a href="/account" class="icon-button ${activePage === 'account' ? 'active' : ''}"><i class="fas fa-user"></i></a>
@@ -175,6 +176,7 @@ export function renderNav(activePage) {
         <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Feminino</a>
         <a href="/category" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Coleções</a>
         <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Acessórios</a>
+        <a href="/tracking" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border); color: #28a745;"><i class="fas fa-truck"></i> Rastrear Pedido</a>
         ${!token ? `
           <button id="mobile-login-toggle" class="button" style="margin-top: 32px; width: 100%;">ENTRAR / CRIAR CONTA</button>
         ` : `
@@ -345,23 +347,33 @@ async function renderDrawerItems() {
 
     const qty = item.quantity;
     subtotal += product.price * qty;
+    const productUrl = `/product.html?id=${product._id || product.id}`;
     
     return `
       <div class="drawer-cart-item">
-        <img src="${product.image || product.images[0]}" alt="${product.name}" />
-        <div>
-          <div class="d-flex justify-content-between">
-            <h3 class="text-uppercase-bold" style="font-size: 0.7rem;">${product.name}</h3>
-            <button class="drawer-remove-btn" data-action="remove" data-key="${key}" style="background:none; border:none; cursor:pointer;">&times;</button>
+        <a href="${productUrl}" class="drawer-cart-img-link" title="Ver detalhes de ${product.name}">
+          <img src="${product.image || product.images[0]}" alt="${product.name}" style="border-radius: var(--radius-sm); transition: transform 0.2s ease;" />
+        </a>
+        <div style="flex: 1;">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="text-uppercase-bold" style="font-size: 0.8rem; margin: 0; line-height: 1.3;">
+              <a href="${productUrl}" style="color: inherit; text-decoration: none;" title="Abrir página do produto">${product.name}</a>
+            </h3>
+            <button class="drawer-remove-btn" data-action="remove" data-key="${key}" title="Remover item" style="background:none; border:none; cursor:pointer; font-size: 1.2rem; line-height: 1; color: var(--color-text-muted); padding: 0 4px;">&times;</button>
           </div>
-          <div class="item-variations">
-            ${item.size ? `<span class="item-variation">${item.size}</span>` : ''}
-            ${item.color ? `<span class="item-variation">${item.color}</span>` : ''}
+          <div class="item-variations" style="margin: 4px 0; display: flex; gap: 6px; flex-wrap: wrap;">
+            ${item.size ? `<span class="item-variation" style="font-size: 0.7rem; font-weight: 700; background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px;">Tam: ${item.size}</span>` : ''}
+            ${item.color ? `<span class="item-variation" style="font-size: 0.7rem; font-weight: 700; background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px;">Cor: ${item.color}</span>` : ''}
           </div>
-          <span style="font-size: 0.75rem;">R$ ${product.price.toFixed(2)}</span>
-          <div class="drawer-qty-control">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+            <span style="font-size: 0.85rem; font-weight: 700;">R$ ${product.price.toFixed(2)}</span>
+            <span class="stock-info" style="font-size: 0.7rem; color: #28a745; font-weight: 700;">
+              <i class="fas fa-check-circle" style="font-size: 0.65rem;"></i> ${product.countInStock} disponíveis
+            </span>
+          </div>
+          <div class="drawer-qty-control" style="margin-top: 8px;">
             <button class="drawer-qty-btn" data-action="decrease" data-key="${key}" data-stock="${product.countInStock}">-</button>
-            <span style="font-size: 0.8rem;">${qty}</span>
+            <span style="font-size: 0.8rem; font-weight: 700;">${qty}</span>
             <button class="drawer-qty-btn" data-action="increase" data-key="${key}" data-stock="${product.countInStock}">+</button>
           </div>
         </div>
@@ -454,6 +466,12 @@ export async function loadCartFromServer() {
     const res = await fetch('/api/users/cart', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('md-essential-admin-token');
+      return;
+    }
+
     if (res.ok) {
       const cartItems = await res.json();
       const cart = {};
@@ -501,9 +519,65 @@ export function addToCart(productId, stock, size = null, color = null, quantity 
   localStorage.setItem('md-essential-cart', JSON.stringify(cart));
   
   syncCart();
-  if (openDrawer) window.toggleCartDrawer(true);
+  if (openDrawer && typeof window.toggleCartDrawer === 'function') {
+    window.toggleCartDrawer(true);
+  }
   return true;
 }
+
+// Torna addToCart acessível globalmente
+window.addToCart = addToCart;
+
+// Seleção rápida de tamanho com adição instantânea
+window.quickSelectAndAdd = function(event, btn, productId, stock, size) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  if (stock <= 0) {
+    alert('Produto esgotado no momento.');
+    return;
+  }
+
+  const card = btn.closest('.product-card');
+  if (card) {
+    // 1. Marca visualmente como selecionado apenas neste card
+    card.querySelectorAll('.quick-buy-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    card.dataset.selectedSize = size;
+  }
+
+  // 2. Adiciona rapidamente ao carrinho com o tamanho selecionado
+  const added = addToCart(productId, stock, size, null, 1, true);
+
+  if (added) {
+    const originalText = btn.dataset.originalText || btn.textContent.trim();
+    btn.dataset.originalText = originalText;
+    btn.textContent = `${size} ✓`;
+    btn.classList.add('btn-added');
+
+    if (card) {
+      const addBtn = card.querySelector('.add-to-cart-button');
+      if (addBtn) {
+        addBtn.textContent = `ADICIONADO (${size})! ✓`;
+        addBtn.classList.add('active');
+      }
+    }
+
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.classList.remove('btn-added');
+      if (card) {
+        const addBtn = card.querySelector('.add-to-cart-button');
+        if (addBtn) {
+          addBtn.textContent = `ADICIONAR (${size})`;
+          addBtn.classList.remove('active');
+        }
+      }
+    }, 1500);
+  }
+};
 
 export function bindGlobalAddButtons() {
   document.querySelectorAll('.add-to-cart-button').forEach((button) => {
@@ -512,25 +586,31 @@ export function bindGlobalAddButtons() {
 
     button.addEventListener('click', (e) => {
       e.preventDefault();
+      const card = button.closest('.product-card');
       const productId = button.dataset.id;
       const stock = parseInt(button.dataset.stock, 10);
       
-      // For quick add from list, we might not have size/color, 
-      // but the logic now supports them as null.
-      addToCart(productId, stock);
+      // Usa o tamanho selecionado no card ou null
+      const selectedSize = card?.dataset.selectedSize || null;
       
-      const originalText = button.textContent;
-      button.textContent = 'ADICIONADO!';
-      button.classList.add('active');
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.classList.remove('active');
-      }, 1200);
+      const added = addToCart(productId, stock, selectedSize, null, 1, true);
+      
+      if (added) {
+        const originalText = button.dataset.originalText || button.textContent;
+        button.dataset.originalText = originalText;
+        button.textContent = selectedSize ? `ADICIONADO (${selectedSize})! ✓` : 'ADICIONADO! ✓';
+        button.classList.add('active');
+        setTimeout(() => {
+          button.textContent = button.dataset.originalText;
+          button.classList.remove('active');
+        }, 1500);
+      }
     });
   });
 }
 
 export function initDrawerEvents() {
+  loadAndApplyStoreSettings();
   const globalOverlay = document.getElementById('global-overlay');
   const cartDrawer = document.getElementById('cart-drawer');
   const loginDrawer = document.getElementById('login-drawer');
@@ -903,25 +983,56 @@ export function renderProductCard(product) {
 
   const badgeHtml = isKit 
     ? `<div class="badge badge-kit">KIT -40%</div>` 
-    : (product.badge ? `<div class="badge">${product.badge}</div>` : '');
+    : (product.badge ? `<div class="badge">${product.badge}</div>` : (stock <= 0 ? `<div class="badge" style="background:#dc3545;">ESGOTADO</div>` : ''));
+
+  // Define os tamanhos: se for padrão vestuário, exibe P, M, G, GG destacando APENAS as disponíveis com cor e clique
+  const standardApparel = ['P', 'M', 'G', 'GG'];
+  const pSizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : standardApparel;
+  const isStandard = pSizes.some(s => standardApparel.includes(s));
+  const sizesToRender = isStandard ? standardApparel : pSizes;
+
+  const quickSizesHtml = sizesToRender.map(s => {
+    const isAvailable = pSizes.includes(s) && stock > 0;
+    if (isAvailable) {
+      return `
+        <button type="button" 
+                class="quick-buy-btn is-available" 
+                data-size="${s}" 
+                title="Tamanho ${s} disponível - Clique para selecionar e adicionar"
+                onclick="window.quickSelectAndAdd(event, this, '${productId}', ${stock}, '${s}')">
+          ${s}
+        </button>
+      `;
+    } else {
+      return `
+        <button type="button" 
+                class="quick-buy-btn is-unavailable" 
+                disabled 
+                data-size="${s}" 
+                title="Tamanho ${s} indisponível">
+          ${s}
+        </button>
+      `;
+    }
+  }).join('');
 
   return `
-    <article class="card product-card">
+    <article class="card product-card" data-product-id="${productId}">
       <div class="product-image product-card-image-wrap">
         ${badgeHtml}
-        ${image ? `<img src="${image}" alt="${product.name}" />` : '<span>Sem imagem</span>'}
+        ${image ? `<img src="${image}" alt="${product.name}" class="product-card-img" />` : '<span>Sem imagem</span>'}
         <div class="product-card-overlay">
            <a class="button small" href="/product?id=${productId}">VER DETALHES</a>
         </div>
         <div class="quick-buy-overlay">
-           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'P'); event.preventDefault();">P</button>
-           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'M'); event.preventDefault();">M</button>
-           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'G'); event.preventDefault();">G</button>
-           <button class="quick-buy-btn" onclick="addToCart('${productId}', 1, 'GG'); event.preventDefault();">GG</button>
+           <span class="quick-buy-label">SELECIONE O TAMANHO:</span>
+           <div class="quick-buy-sizes-row">
+             ${quickSizesHtml}
+           </div>
         </div>
       </div>
       <div class="card-body">
-        <h3 class="product-title">${product.name}</h3>
+        <h3 class="product-title"><a href="/product?id=${productId}" style="color: inherit; text-decoration: none;">${product.name}</a></h3>
         <div class="product-price-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
           ${originalPriceHtml}
           <span class="price-tag ${isKit ? 'price-promo' : ''}">R$ ${product.price.toFixed(2)}</span>
@@ -937,23 +1048,13 @@ export function renderProductCard(product) {
               <span class="swatch" style="background: #808080;"></span>
             `}
           </div>
-          <div class="sizes-row">
-            ${product.sizes && product.sizes.length ? product.sizes.map(s => `
-              <span>${s}</span>
-            `).join('') : `
-              <span>P</span>
-              <span>M</span>
-              <span>G</span>
-              <span>GG</span>
-            `}
-          </div>
         </div>
 
         <div class="product-actions mt-auto">
           <button class="button small w-100 add-to-cart-button" 
                   data-id="${productId}" 
                   data-stock="${stock}">
-            ADICIONAR AO CARRINHO
+            ${stock > 0 ? 'ADICIONAR AO CARRINHO' : 'ESGOTADO'}
           </button>
         </div>
       </div>
@@ -985,3 +1086,40 @@ export function renderFooter() {
     </footer>
   `;
 }
+
+export async function loadAndApplyStoreSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (!res.ok) return;
+    const settings = await res.json();
+
+    if (settings.storeName) {
+      document.title = settings.storeName;
+    }
+
+    const announcementEl = document.querySelector('#announcement-bar p');
+    if (announcementEl && settings.announcementText) {
+      announcementEl.textContent = settings.announcementText;
+    }
+
+    const brandLinks = document.querySelectorAll('.brand-link');
+    brandLinks.forEach(brandEl => {
+      const link = brandEl.querySelector('a');
+      if (link) {
+        if (settings.logoUrl) {
+          link.innerHTML = `<img src="${settings.logoUrl}" alt="${settings.storeName || 'Logo'}" style="max-height: 36px; object-fit: contain;" />`;
+        } else if (settings.storeName) {
+          link.textContent = settings.storeName;
+        }
+      }
+    });
+
+    const footerText = document.querySelector('.app-footer p');
+    if (footerText && settings.storeName) {
+      footerText.innerHTML = `&copy; ${new Date().getFullYear()} ${settings.storeName}. Todos os direitos reservados.`;
+    }
+  } catch (err) {
+    console.error('Error applying store settings to UI:', err);
+  }
+}
+

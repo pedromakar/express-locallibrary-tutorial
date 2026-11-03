@@ -23,23 +23,29 @@ const CATEGORY_IMAGES = {
 const DEFAULT_CATEGORY_IMAGE = 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80';
 
 async function fetchHomeData() {
-  const [productRes, categoryRes] = await Promise.all([
+  const [productRes, categoryRes, settingsRes] = await Promise.all([
     fetch('/api/products'),
     fetch('/api/products/categories'),
+    fetch('/api/settings'),
   ]);
 
   const products = productRes.ok ? await productRes.json() : [];
   const categories = categoryRes.ok ? await categoryRes.json() : [];
-  return { products, categories };
+  const settings = settingsRes.ok ? await settingsRes.json() : null;
+  return { products, categories, settings };
 }
 
-function getCategoryImage(categoryName) {
+function getCategoryImage(categoryName, settings) {
+  const catImages = settings?.categoryImages || {};
+  if (catImages[categoryName]) {
+    return catImages[categoryName];
+  }
   const key = categoryName.trim().toLowerCase();
   return CATEGORY_IMAGES[key] || DEFAULT_CATEGORY_IMAGE;
 }
 
-function renderFluidCategoryCard(category) {
-  const imgUrl = getCategoryImage(category.name);
+function renderFluidCategoryCard(category, settings) {
+  const imgUrl = getCategoryImage(category.name, settings);
   const categoryLink = `/category.html?id=${encodeURIComponent(category.name)}`;
   return `
     <div class="category-carousel-item">
@@ -108,20 +114,20 @@ function setupCategoryCarousel(totalCategories) {
   updateCarousel();
 }
 
-function render(products, categories) {
+function render(products, categories, settings) {
   root.innerHTML = `
     ${renderNav('home')}
     <main class="content">
       <!-- Premium Hero Section -->
-      <section class="hero premium-hero">
+      <section class="hero premium-hero" style="${settings?.heroBannerUrl ? `background-image: url('${settings.heroBannerUrl}'); background-size: cover; background-position: center;` : ''}">
         <div class="hero-overlay"></div>
         <div class="hero-content-box">
-          <p class="eyebrow">HIGH PERFORMANCE APPAREL — SOMBRIO/SC</p>
-          <h1 class="text-uppercase-bold">ESSENCIAL PARA QUEM SUPERA LIMITES</h1>
-          <p>Modelagens anatômicas e isolamento inteligente. Desenvolvido para máxima performance e atitude em qualquer treino.</p>
+          <p class="eyebrow">${settings?.heroEyebrow || 'HIGH PERFORMANCE APPAREL — SOMBRIO/SC'}</p>
+          <h1 class="text-uppercase-bold">${settings?.heroTitle || 'ESSENCIAL PARA QUEM SUPERA LIMITES'}</h1>
+          <p>${settings?.heroSubtitle || 'Modelagens anatômicas e isolamento inteligente. Desenvolvido para máxima performance e atitude em qualquer treino.'}</p>
           <div class="button-row" style="margin-top: 28px;">
-            <a class="button" href="/products">VER PRODUTOS</a>
-            <a class="button button-outline" href="/category" style="color:#fff;border-color:#fff;">COLEÇÕES 2026</a>
+            <a class="button" href="/products">${settings?.heroButtonText || 'VER PRODUTOS'}</a>
+            <a class="button button-outline" href="/category" style="color:#fff;border-color:#fff;">COLEÇÕES</a>
           </div>
         </div>
       </section>
@@ -149,7 +155,7 @@ function render(products, categories) {
           <div class="category-carousel-wrapper">
             <div class="category-carousel-container">
               <div class="category-carousel-track" id="category-carousel-track">
-                ${categories.map(renderFluidCategoryCard).join('')}
+                ${categories.map(c => renderFluidCategoryCard(c, settings)).join('')}
               </div>
             </div>
           </div>

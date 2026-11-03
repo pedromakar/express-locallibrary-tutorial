@@ -34,9 +34,31 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: '' },
   shippingMethod: { type: String, default: '' },
   shippingPrice: { type: Number, default: 0 },
+  shippingAddress: {
+    recipientName: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    zipCode: { type: String, default: '' },
+    street: { type: String, default: '' },
+    number: { type: String, default: '' },
+    complement: { type: String, default: '' },
+    neighborhood: { type: String, default: '' },
+    city: { type: String, default: '' },
+    state: { type: String, default: '' }
+  },
+  customerPhone: { type: String, default: '' },
+  customerEmail: { type: String, default: '' },
   pixCode: { type: String, default: '' },
   boletoCode: { type: String, default: '' },
   trackingCode: { type: String, default: '' },
+  carrier: { type: String, default: 'Correios' },
+  trackingEvents: [
+    {
+      status: { type: String, required: true },
+      description: { type: String, required: true },
+      location: { type: String, default: 'Sombrio/SC' },
+      date: { type: Date, default: Date.now }
+    }
+  ]
 }, {
   timestamps: true,
 });

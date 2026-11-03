@@ -6,20 +6,50 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const [addedText, setAddedText] = useState('ADICIONAR AO CARRINHO');
   const [isActive, setIsActive] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [addedSize, setAddedSize] = useState(null);
 
   const productId = product._id || product.id;
   const stock = product.countInStock || 0;
   const isKit = product.category && /kits/i.test(product.category);
   const image = product.image || (product.images && product.images.length ? product.images[0] : '');
 
-  const handleAddToCart = () => {
-    addToCart(product, 1);
-    setAddedText('ADICIONADO!');
+  const standardApparel = ['P', 'M', 'G', 'GG'];
+  const pSizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : standardApparel;
+  const isStandard = pSizes.some((s) => standardApparel.includes(s));
+  const sizesToRender = isStandard ? standardApparel : pSizes;
+
+  const handleQuickAddSize = (size, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (stock <= 0) return;
+
+    setSelectedSize(size);
+    setAddedSize(size);
+    addToCart(product, 1, size);
+
+    setAddedText(`ADICIONADO (${size})! ✓`);
+    setIsActive(true);
+
+    setTimeout(() => {
+      setAddedSize(null);
+      setAddedText('ADICIONAR AO CARRINHO');
+      setIsActive(false);
+    }, 1500);
+  };
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    if (stock <= 0) return;
+
+    const sizeToUse = selectedSize || (pSizes.length ? pSizes[0] : null);
+    addToCart(product, 1, sizeToUse);
+    setAddedText(sizeToUse ? `ADICIONADO (${sizeToUse})! ✓` : 'ADICIONADO! ✓');
     setIsActive(true);
     setTimeout(() => {
       setAddedText('ADICIONAR AO CARRINHO');
       setIsActive(false);
-    }, 1200);
+    }, 1500);
   };
 
   const originalPriceHtml = isKit ? (
@@ -30,11 +60,13 @@ const ProductCard = ({ product }) => {
     <div className="badge badge-kit">KIT -40%</div>
   ) : product.badge ? (
     <div className="badge">{product.badge}</div>
+  ) : stock <= 0 ? (
+    <div className="badge" style={{ background: '#dc3545' }}>ESGOTADO</div>
   ) : null;
 
   return (
-    <article className="card product-card">
-      <div className="product-image">
+    <article className="card product-card" data-product-id={productId}>
+      <div className="product-image product-card-image-wrap">
         {badgeHtml}
         {image ? <img src={image} alt={product.name} /> : <span>Sem imagem</span>}
         <div className="product-card-overlay">
@@ -42,9 +74,45 @@ const ProductCard = ({ product }) => {
             VER DETALHES
           </Link>
         </div>
+        <div className="quick-buy-overlay">
+          <span className="quick-buy-label">SELECIONE O TAMANHO:</span>
+          <div className="quick-buy-sizes-row">
+            {sizesToRender.map((s, idx) => {
+              const isAvailable = pSizes.includes(s) && stock > 0;
+              const isSelected = selectedSize === s;
+              const isThisAdded = addedSize === s;
+
+              return isAvailable ? (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`quick-buy-btn is-available ${isSelected ? 'selected' : ''} ${isThisAdded ? 'btn-added' : ''}`}
+                  title={`Tamanho ${s} disponível`}
+                  onClick={(e) => handleQuickAddSize(s, e)}
+                >
+                  {isThisAdded ? `${s} ✓` : s}
+                </button>
+              ) : (
+                <button
+                  key={idx}
+                  type="button"
+                  className="quick-buy-btn is-unavailable"
+                  disabled
+                  title={`Tamanho ${s} indisponível`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
       <div className="card-body">
-        <h3 className="product-title">{product.name}</h3>
+        <h3 className="product-title">
+          <Link to={`/product/${productId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+            {product.name}
+          </Link>
+        </h3>
         <div className="product-price-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
           {originalPriceHtml}
           <span className={`price-tag ${isKit ? 'price-promo' : ''}`}>
@@ -68,18 +136,6 @@ const ProductCard = ({ product }) => {
                 <span className="swatch" style={{ background: '#000' }}></span>
                 <span className="swatch" style={{ background: '#fff', border: '1px solid #ddd' }}></span>
                 <span className="swatch" style={{ background: '#808080' }}></span>
-              </>
-            )}
-          </div>
-          <div className="sizes-row">
-            {product.sizes && product.sizes.length ? (
-              product.sizes.map((s, index) => <span key={index}>{s}</span>)
-            ) : (
-              <>
-                <span>P</span>
-                <span>M</span>
-                <span>G</span>
-                <span>GG</span>
               </>
             )}
           </div>

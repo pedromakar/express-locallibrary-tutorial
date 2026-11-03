@@ -239,6 +239,9 @@ function renderShell() {
         <button class="admin-nav-item ${currentTab === 'reports' ? 'active' : ''}" onclick="switchTab('reports')">
           <i class="fas fa-chart-line"></i> <span>Relatórios</span>
         </button>
+        <button class="admin-nav-item ${currentTab === 'design' ? 'active' : ''}" onclick="switchTab('design')">
+          <i class="fas fa-palette"></i> <span>Design da Loja</span>
+        </button>
       </nav>
       <div class="admin-sidebar-footer">
         <a href="/" class="admin-nav-item">
@@ -331,6 +334,11 @@ async function renderActiveTab() {
       titleEl.textContent = 'Relatórios de Vendas';
       await loadReports();
       renderReportsTab(container);
+      break;
+    case 'design':
+      titleEl.textContent = 'Design & Aparência da Loja';
+      await Promise.all([loadStoreSettings(), loadProducts()]);
+      renderDesignTab(container);
       break;
   }
   updateNotificationsBadge();
@@ -1668,3 +1676,249 @@ function renderReportsTab(container) {
 
 // Initial application bootstrap
 renderShell();
+
+// --------------------------------------------------------------------------
+// VIEW: Design da Loja
+// --------------------------------------------------------------------------
+let storeSettingsData = null;
+
+async function loadStoreSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      storeSettingsData = await res.json();
+    }
+  } catch (err) {
+    console.error('Error loading store settings:', err);
+  }
+}
+
+function renderDesignTab(container) {
+  if (!storeSettingsData) {
+    storeSettingsData = {
+      storeName: 'MD ESSENTIAL',
+      logoUrl: '',
+      announcementText: 'FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK NA PRIMEIRA COMPRA',
+      heroEyebrow: 'Coleção Apex Pro - A Melhor do Brasil',
+      heroTitle: 'O INVERNO É O NOSSO PONTO ZERO',
+      heroSubtitle: 'Alta performance e isolamento térmico inteligente. Desenvolvido para superar o frio com atitude.',
+      heroButtonText: 'VER COLEÇÃO',
+      heroBannerUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1600&q=80',
+      categoryImages: {}
+    };
+  }
+
+  const catImages = storeSettingsData.categoryImages || {};
+  const availableCategories = Array.from(new Set([
+    'Camisetas', 'Shorts', 'Regatas', 'Leggings', 'Moletons', 'Tops e Camisetas', 'Acessórios',
+    ...products.map(p => p.category).filter(Boolean)
+  ]));
+
+  let categoryInputsHtml = availableCategories.map(catName => {
+    const currentImg = catImages[catName] || '';
+    return `
+      <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; background: #fafafa;">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; font-weight: 700; color: #212529;">${catName}</h4>
+        ${currentImg ? `<div style="margin-bottom: 10px; height: 120px; border-radius: 6px; overflow: hidden;"><img src="${currentImg}" alt="${catName}" style="width: 100%; height: 100%; object-fit: cover;" /></div>` : ''}
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="cat-img-${catName}" value="${currentImg}" placeholder="URL da Imagem" style="flex-grow: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem;" />
+          <label class="button button-outline" style="cursor: pointer; padding: 8px 10px; font-size: 0.75rem; white-space: nowrap; margin: 0; border: 1px solid #cbd5e1; border-radius: 4px;">
+            <i class="fas fa-upload"></i>
+            <input type="file" accept="image/*" style="display: none;" onchange="handleCatImgUpload('${catName}', this)" />
+          </label>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1 style="margin: 0; font-size: 1.8rem; font-weight: 800;">DESIGN & APARÊNCIA DA LOJA</h1>
+        <p style="color: #64748b; font-size: 0.85rem; margin-top: 4px;">Personalize a identidade visual, logo, avisos do topo, banners e fotos das categorias sem alterar código.</p>
+      </div>
+      <button onclick="saveDesignForm()" class="button" style="padding: 12px 24px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; background: #212529; color: #fff; border: none; cursor: pointer;">
+        <i class="fas fa-save" style="margin-right: 8px;"></i> Salvar Alterações
+      </button>
+    </div>
+
+    <form id="design-form" onsubmit="event.preventDefault(); saveDesignForm();" style="display: flex; flex-direction: column; gap: 28px;">
+      <!-- Identidade da Marca -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-store"></i> Identidade da Marca
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Nome da Loja</label>
+            <input type="text" id="design-store-name" value="${storeSettingsData.storeName || ''}" placeholder="Ex: MD ESSENTIAL" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Logo da Loja (Imagem)</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="design-logo-url" value="${storeSettingsData.logoUrl || ''}" placeholder="URL da Logo ou upload" style="flex-grow: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+              <label class="button button-outline" style="cursor: pointer; padding: 10px 14px; font-size: 0.8rem; white-space: nowrap; margin: 0; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <i class="fas fa-upload"></i> Upload
+                <input type="file" accept="image/*" style="display: none;" onchange="handleLogoUpload(this)" />
+              </label>
+            </div>
+            ${storeSettingsData.logoUrl ? `<div style="margin-top: 12px; background: #212529; padding: 10px; border-radius: 6px; display: inline-block;"><img src="${storeSettingsData.logoUrl}" id="logo-preview-img" style="max-height: 40px; object-fit: contain;" /></div>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Anúncios -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-bullhorn"></i> Barra de Anúncios no Topo
+        </h3>
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Texto Promocional</label>
+          <input type="text" id="design-announcement" value="${storeSettingsData.announcementText || ''}" placeholder="Ex: FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+        </div>
+      </div>
+
+      <!-- Banner Principal (Hero) -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-image"></i> Banner Principal da Home (Hero)
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Sub-título de Topo (Eyebrow)</label>
+            <input type="text" id="design-hero-eyebrow" value="${storeSettingsData.heroEyebrow || ''}" placeholder="Ex: Coleção Apex Pro" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Título Principal</label>
+            <input type="text" id="design-hero-title" value="${storeSettingsData.heroTitle || ''}" placeholder="Ex: O INVERNO É O NOSSO PONTO ZERO" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Descrição do Banner</label>
+            <textarea rows="2" id="design-hero-subtitle" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">${storeSettingsData.heroSubtitle || ''}</textarea>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Texto do Botão</label>
+            <input type="text" id="design-hero-btn" value="${storeSettingsData.heroButtonText || ''}" placeholder="Ex: VER COLEÇÃO" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+          </div>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Imagem de Fundo do Banner</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="design-hero-bg" value="${storeSettingsData.heroBannerUrl || ''}" placeholder="URL da imagem de fundo" style="flex-grow: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+            <label class="button button-outline" style="cursor: pointer; padding: 10px 14px; font-size: 0.8rem; white-space: nowrap; margin: 0; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <i class="fas fa-upload"></i> Upload Fundo
+              <input type="file" accept="image/*" style="display: none;" onchange="handleHeroBgUpload(this)" />
+            </label>
+          </div>
+          ${storeSettingsData.heroBannerUrl ? `<div style="margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; max-height: 140px;"><img src="${storeSettingsData.heroBannerUrl}" style="width: 100%; height: 140px; object-fit: cover;" /></div>` : ''}
+        </div>
+      </div>
+
+      <!-- Fotos das Categorias -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-th-large"></i> Fotos das Categorias na Página Inicial
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+          ${categoryInputsHtml}
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 10px;">
+        <button type="submit" class="button" style="padding: 14px 32px; font-size: 1rem; font-weight: 800; border-radius: 6px; background: #212529; color: #fff; border: none; cursor: pointer;">
+          <i class="fas fa-check" style="margin-right: 8px;"></i> Salvar Alterações de Design
+        </button>
+      </div>
+    </form>
+  `;
+}
+
+window.handleLogoUpload = function(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('design-logo-url').value = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+};
+
+window.handleHeroBgUpload = function(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('design-hero-bg').value = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+};
+
+window.handleCatImgUpload = function(catName, input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const el = document.getElementById(`cat-img-${catName}`);
+      if (el) el.value = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+};
+
+window.saveDesignForm = async function() {
+  const storeName = document.getElementById('design-store-name').value;
+  const logoUrl = document.getElementById('design-logo-url').value;
+  const announcementText = document.getElementById('design-announcement').value;
+  const heroEyebrow = document.getElementById('design-hero-eyebrow').value;
+  const heroTitle = document.getElementById('design-hero-title').value;
+  const heroSubtitle = document.getElementById('design-hero-subtitle').value;
+  const heroButtonText = document.getElementById('design-hero-btn').value;
+  const heroBannerUrl = document.getElementById('design-hero-bg').value;
+
+  const categoryImages = {};
+  const availableCategories = Array.from(new Set([
+    'Camisetas', 'Shorts', 'Regatas', 'Leggings', 'Moletons', 'Tops e Camisetas', 'Acessórios',
+    ...products.map(p => p.category).filter(Boolean)
+  ]));
+
+  availableCategories.forEach(catName => {
+    const el = document.getElementById(`cat-img-${catName}`);
+    if (el) {
+      categoryImages[catName] = el.value;
+    }
+  });
+
+  const payload = {
+    storeName,
+    logoUrl,
+    announcementText,
+    heroEyebrow,
+    heroTitle,
+    heroSubtitle,
+    heroButtonText,
+    heroBannerUrl,
+    categoryImages
+  };
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      storeSettingsData = await res.json();
+      showToast('Aparência e Design da loja salvos com sucesso!');
+      renderActiveTab();
+    } else {
+      showToast('Erro ao salvar as configurações.');
+    }
+  } catch (err) {
+    showToast('Erro de conexão ao salvar configurações.');
+  }
+};
+

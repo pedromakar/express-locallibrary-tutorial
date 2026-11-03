@@ -35,6 +35,11 @@ jspm_packages
 # Optional npm cache directory
 .npm
 
+# Local database data
+.db_data
+*.sqlite
+.env
+
 # Optional REPL history
 .node_repl_history
 

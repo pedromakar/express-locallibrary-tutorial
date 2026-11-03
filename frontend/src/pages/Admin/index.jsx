@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useStoreSettings } from '../../contexts/StoreSettingsContext';
 import adminService from '../../services/adminService';
 import productService from '../../services/productService';
 import api from '../../services/api';
@@ -25,10 +26,98 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const Admin = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { settings, updateStoreSettings } = useStoreSettings();
 
   // Tab state
   const [currentTab, setCurrentTab] = useState('dashboard');
   
+  // Store Design state
+  const [designSettings, setDesignSettings] = useState({
+    storeName: '',
+    logoUrl: '',
+    announcementText: '',
+    heroEyebrow: '',
+    heroTitle: '',
+    heroSubtitle: '',
+    heroButtonText: '',
+    heroBannerUrl: '',
+    categoryImages: {}
+  });
+
+  useEffect(() => {
+    if (settings) {
+      const catImgObj = settings.categoryImages
+        ? (typeof settings.categoryImages.get === 'function'
+            ? Object.fromEntries(settings.categoryImages)
+            : { ...settings.categoryImages })
+        : {};
+      setDesignSettings({
+        storeName: settings.storeName || 'MD ESSENTIAL',
+        logoUrl: settings.logoUrl || '',
+        announcementText: settings.announcementText || '',
+        heroEyebrow: settings.heroEyebrow || '',
+        heroTitle: settings.heroTitle || '',
+        heroSubtitle: settings.heroSubtitle || '',
+        heroButtonText: settings.heroButtonText || '',
+        heroBannerUrl: settings.heroBannerUrl || '',
+        categoryImages: catImgObj
+      });
+    }
+  }, [settings]);
+
+  const handleLogoFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDesignSettings(prev => ({ ...prev, logoUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleHeroBannerFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDesignSettings(prev => ({ ...prev, heroBannerUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCategoryImageFileUpload = (catName, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDesignSettings(prev => ({
+          ...prev,
+          categoryImages: {
+            ...prev.categoryImages,
+            [catName]: reader.result
+          }
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveDesign = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setActionLoading(true);
+    try {
+      await updateStoreSettings(designSettings);
+      triggerToast('Aparência e Design da loja salvos com sucesso!');
+    } catch (err) {
+      console.error('Error saving design settings:', err);
+      triggerToast('Erro ao salvar as configurações de design.', 'fa-times-circle');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Dashboard & Lists Data
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
@@ -465,6 +554,9 @@ const Admin = () => {
           </button>
           <button className={`admin-nav-item ${currentTab === 'reports' ? 'active' : ''}`} onClick={() => { setCurrentTab('reports'); setEditingProduct(null); }}>
             <i className="fas fa-chart-line"></i> <span>Relatórios</span>
+          </button>
+          <button className={`admin-nav-item ${currentTab === 'design' ? 'active' : ''}`} onClick={() => { setCurrentTab('design'); setEditingProduct(null); }}>
+            <i className="fas fa-palette"></i> <span>Design da Loja</span>
           </button>
         </nav>
         <div className="admin-sidebar-footer" style={{ padding: '0 16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
@@ -1036,6 +1128,240 @@ const Admin = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB: DESIGN DA LOJA */}
+        {currentTab === 'design' && (
+          <div>
+            <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>DESIGN & APARÊNCIA DA LOJA</h1>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+                  Personalize a identidade visual, logo, avisos do topo, banners e imagens das categorias sem alterar código.
+                </p>
+              </div>
+              <button
+                onClick={handleSaveDesign}
+                disabled={actionLoading}
+                className="button"
+                style={{ padding: '12px 24px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '6px' }}
+              >
+                <i className="fas fa-save" style={{ marginRight: '8px' }}></i>
+                {actionLoading ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDesign} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              {/* SECTION 1: IDENTIDADE DA MARCA */}
+              <div style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '28px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="fas fa-store" style={{ color: '#212529' }}></i> Identidade da Marca
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Nome da Loja</label>
+                    <input
+                      type="text"
+                      value={designSettings.storeName}
+                      onChange={(e) => setDesignSettings({ ...designSettings, storeName: e.target.value })}
+                      placeholder="Ex: MD ESSENTIAL"
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Logo da Loja (Imagem)</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={designSettings.logoUrl}
+                        onChange={(e) => setDesignSettings({ ...designSettings, logoUrl: e.target.value })}
+                        placeholder="Cole a URL da logo ou faça upload"
+                        style={{ flexGrow: 1, padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                      />
+                      <label className="button button-outline" style={{ cursor: 'pointer', padding: '10px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', margin: 0 }}>
+                        <i className="fas fa-upload"></i> Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                    {designSettings.logoUrl && (
+                      <div style={{ marginTop: '12px', background: '#212529', padding: '12px', borderRadius: '6px', display: 'inline-block' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#adb5bd', display: 'block', marginBottom: '6px' }}>Pré-visualização da Logo:</span>
+                        <img src={designSettings.logoUrl} alt="Logo Preview" style={{ maxHeight: '40px', objectFit: 'contain' }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: BARRA DE ANÚNCIOS */}
+              <div style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '28px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="fas fa-bullhorn" style={{ color: '#212529' }}></i> Barra de Anúncios no Topo
+                </h3>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Texto Promocional</label>
+                  <input
+                    type="text"
+                    value={designSettings.announcementText}
+                    onChange={(e) => setDesignSettings({ ...designSettings, announcementText: e.target.value })}
+                    placeholder="Ex: FRETE GRÁTIS ACIMA DE R$ 198 · 10% CASHBACK"
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: BANNER PRINCIPAL (HERO) */}
+              <div style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '28px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="fas fa-image" style={{ color: '#212529' }}></i> Banner Principal da Home (Hero)
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Sub-título de Topo (Eyebrow)</label>
+                    <input
+                      type="text"
+                      value={designSettings.heroEyebrow}
+                      onChange={(e) => setDesignSettings({ ...designSettings, heroEyebrow: e.target.value })}
+                      placeholder="Ex: Coleção Apex Pro - A Melhor do Brasil"
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Título Principal</label>
+                    <input
+                      type="text"
+                      value={designSettings.heroTitle}
+                      onChange={(e) => setDesignSettings({ ...designSettings, heroTitle: e.target.value })}
+                      placeholder="Ex: O INVERNO É O NOSSO PONTO ZERO"
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Descrição do Banner</label>
+                    <textarea
+                      rows="2"
+                      value={designSettings.heroSubtitle}
+                      onChange={(e) => setDesignSettings({ ...designSettings, heroSubtitle: e.target.value })}
+                      placeholder="Ex: Alta performance e isolamento térmico inteligente..."
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Texto do Botão</label>
+                    <input
+                      type="text"
+                      value={designSettings.heroButtonText}
+                      onChange={(e) => setDesignSettings({ ...designSettings, heroButtonText: e.target.value })}
+                      placeholder="Ex: VER COLEÇÃO"
+                      style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>Imagem de Fundo do Banner</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={designSettings.heroBannerUrl}
+                      onChange={(e) => setDesignSettings({ ...designSettings, heroBannerUrl: e.target.value })}
+                      placeholder="Cole a URL da imagem de fundo do banner"
+                      style={{ flexGrow: 1, padding: '10px 14px', border: '1px solid var(--color-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+                    />
+                    <label className="button button-outline" style={{ cursor: 'pointer', padding: '10px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap', margin: 0 }}>
+                      <i className="fas fa-upload"></i> Upload Fundo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleHeroBannerFileUpload}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {designSettings.heroBannerUrl && (
+                    <div style={{ marginTop: '12px', border: '1px solid var(--color-border)', borderRadius: '6px', overflow: 'hidden', maxHeight: '160px' }}>
+                      <img src={designSettings.heroBannerUrl} alt="Hero Banner Preview" style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 4: FOTOS DAS CATEGORIAS */}
+              <div style={{ background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '28px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="fas fa-th-large" style={{ color: '#212529' }}></i> Fotos das Categorias na Página Inicial
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  {availableCategories.map((catName) => {
+                    const currentImg = designSettings.categoryImages?.[catName] || '';
+                    return (
+                      <div key={catName} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', background: '#fafafa' }}>
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', fontWeight: 700, color: '#212529' }}>{catName}</h4>
+                        
+                        {currentImg && (
+                          <div style={{ marginBottom: '10px', height: '120px', borderRadius: '6px', overflow: 'hidden' }}>
+                            <img src={currentImg} alt={catName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            value={currentImg}
+                            onChange={(e) => setDesignSettings({
+                              ...designSettings,
+                              categoryImages: {
+                                ...designSettings.categoryImages,
+                                [catName]: e.target.value
+                              }
+                            })}
+                            placeholder="URL da Imagem"
+                            style={{ flexGrow: 1, padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: '4px', fontSize: '0.8rem' }}
+                          />
+                          <label className="button button-outline" style={{ cursor: 'pointer', padding: '8px 10px', fontSize: '0.75rem', whiteSpace: 'nowrap', margin: 0 }}>
+                            <i className="fas fa-upload"></i>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleCategoryImageFileUpload(catName, e)}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="button"
+                  style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: 800, borderRadius: '6px' }}
+                >
+                  <i className="fas fa-check" style={{ marginRight: '8px' }}></i>
+                  {actionLoading ? 'Salvando...' : 'Salvar Alterações de Design'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 

@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
@@ -30,10 +31,11 @@ app.use(helmet({
 // Compress all routes
 app.use(compression());
 
-// Rate limit for API requests
+// Rate limit for API requests (lenient in development)
+const isDev = process.env.NODE_ENV !== 'production';
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 10000 : 200,
   message: 'Too many requests from this IP, please try again after 15 minutes',
 });
 app.use('/api/', apiLimiter);
@@ -47,6 +49,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
@@ -94,6 +97,10 @@ app.get('/checkout', (req, res) => {
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'admin.html'));
+});
+
+app.get('/tracking', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'tracking.html'));
 });
 
 const PORT = process.env.PORT || 5000;
