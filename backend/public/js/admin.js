@@ -462,14 +462,18 @@ function renderDashboard(container) {
               </thead>
               <tbody>
                 ${stats.recentOrders.slice(0, 5).map(order => `
-                  <tr>
-                    <td class="fw-bold">#${order._id.slice(-6).toUpperCase()}</td>
-                    <td>${order.user ? order.user.username : 'Removido'}</td>
+                  <tr class="clickable-row" onclick="openOrderDetailsModal('${order._id}')" title="Clique para abrir a ficha completa do pedido">
+                    <td class="fw-bold" style="color: var(--admin-color-primary);">
+                      #${order._id.slice(-6).toUpperCase()}
+                      <i class="fas fa-search-plus" style="font-size:0.65rem; margin-left:4px; opacity:0.7;"></i>
+                    </td>
+                    <td>${order.shippingAddress?.recipientName || (order.user ? order.user.username : 'Removido')}</td>
                     <td class="fw-bold">R$ ${order.totalPrice.toFixed(2)}</td>
                     <td>
                       <span class="admin-badge ${
                         order.status === 'paid' ? 'admin-badge-success' :
                         order.status === 'shipped' ? 'admin-badge-info' :
+                        order.status === 'delivered' ? 'admin-badge-success' :
                         order.status === 'canceled' ? 'admin-badge-error' :
                         'admin-badge-warning'
                       }">${order.status}</span>
@@ -592,25 +596,30 @@ function renderOrders(container) {
               </thead>
               <tbody>
                 ${paginated.map(order => `
-                  <tr>
-                    <td class="fw-bold">#${order._id.slice(-6).toUpperCase()}</td>
-                    <td>
-                      <div><strong>${order.user ? order.user.username : 'Removido'}</strong></div>
-                      <small class="text-muted">${order.user ? order.user.email : ''}</small>
+                  <tr class="clickable-row">
+                    <td class="fw-bold" onclick="openOrderDetailsModal('${order._id}')" style="cursor:pointer;" title="Clique para abrir detalhes">
+                      <span style="color:var(--admin-color-primary);">#${order._id.slice(-6).toUpperCase()}</span>
+                      <i class="fas fa-search-plus" style="font-size:0.65rem; margin-left:4px; opacity:0.7;"></i>
                     </td>
-                    <td>${new Date(order.createdAt).toLocaleDateString('pt-BR')} ${new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                    <td class="fw-bold">R$ ${order.totalPrice.toFixed(2)}</td>
+                    <td onclick="openOrderDetailsModal('${order._id}')" style="cursor:pointer;">
+                      <div><strong>${order.shippingAddress?.recipientName || (order.user ? order.user.username : 'Removido')}</strong></div>
+                      <small class="text-muted">${order.shippingAddress?.city ? order.shippingAddress.city + '/' + order.shippingAddress.state : (order.user ? order.user.email : '')}</small>
+                    </td>
+                    <td onclick="openOrderDetailsModal('${order._id}')" style="cursor:pointer;">${new Date(order.createdAt).toLocaleDateString('pt-BR')} ${new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                    <td class="fw-bold" onclick="openOrderDetailsModal('${order._id}')" style="cursor:pointer;">R$ ${order.totalPrice.toFixed(2)}</td>
                     <td>
                       <select class="filter-select" style="padding: 4px 8px; font-size: 0.8rem;" onchange="updateOrderStatus('${order._id}', this.value)">
                         <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pendente</option>
                         <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>Pago</option>
+                        <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Em Separação</option>
                         <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Enviado</option>
+                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Entregue</option>
                         <option value="canceled" ${order.status === 'canceled' ? 'selected' : ''}>Cancelado</option>
                       </select>
                     </td>
                     <td>
-                      <button class="admin-btn admin-btn-small" onclick="viewOrderItems('${order._id}')">
-                        <i class="fas fa-box-open"></i> Ver (${order.items.length})
+                      <button class="admin-btn admin-btn-small" onclick="openOrderDetailsModal('${order._id}')" title="Ver e gerenciar todos os detalhes">
+                        <i class="fas fa-receipt"></i> Detalhes (${order.items.length})
                       </button>
                     </td>
                   </tr>
@@ -675,49 +684,355 @@ window.updateOrderStatus = async function(orderId, status) {
   }
 };
 
-window.viewOrderItems = function(orderId) {
-  const order = orders.find(o => o._id === orderId);
-  if (!order) return;
+window.openOrderDetailsModal = async function(orderId) {
+  let order = orders.find(o => o._id === orderId);
+  if (!order) {
+    try {
+      const res = await fetch(`/api/order/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        order = await res.json();
+      }
+    } catch (e) {}
+  }
+  if (!order) {
+    showToast('Pedido não encontrado.', 'fa-exclamation-triangle');
+    return;
+  }
 
+  const shortId = order._id.slice(-6).toUpperCase();
   const modal = document.getElementById('admin-modal-overlay');
+
+  const addr = order.shippingAddress || {};
+  const cityState = (addr.city && addr.state) ? `${addr.city}/${addr.state}` : (addr.state || 'Sombrio/SC');
+  const fullAddress = [
+    addr.street ? `${addr.street}, Nº ${addr.number || 'S/N'}` : null,
+    addr.complement ? `(${addr.complement})` : null,
+    addr.neighborhood ? `Bairro ${addr.neighborhood}` : null,
+    addr.city ? `${addr.city} - ${addr.state || ''}` : null,
+    addr.zipCode ? `CEP: ${addr.zipCode}` : null
+  ].filter(Boolean).join(', ') || 'Endereço não cadastrado';
+
+  const clientPhone = order.customerPhone || addr.phone || order.user?.phone || '';
+  const cleanPhone = clientPhone.replace(/\D/g, '');
+  const itemsSubtotal = order.items.reduce((acc, it) => acc + (it.price * it.quantity), 0);
+  const shippingVal = order.shippingPrice !== undefined ? order.shippingPrice : (order.totalPrice - itemsSubtotal > 0 ? (order.totalPrice - itemsSubtotal) : 0);
+
   modal.innerHTML = `
-    <div class="admin-modal">
-      <div class="admin-modal-header">
-        <h3>Detalhes do Pedido #${order._id.slice(-6).toUpperCase()}</h3>
+    <div class="admin-modal admin-modal-lg">
+      <div class="admin-modal-header" style="background:#f8fafc;">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <h3 style="font-size:1.2rem; font-weight:800; margin:0;">
+              <i class="fas fa-file-invoice" style="color:var(--admin-color-primary);"></i> Pedido #${shortId}
+            </h3>
+            <span class="admin-badge ${
+              order.status === 'paid' ? 'admin-badge-success' :
+              order.status === 'shipped' ? 'admin-badge-info' :
+              order.status === 'delivered' ? 'admin-badge-success' :
+              order.status === 'canceled' ? 'admin-badge-error' :
+              'admin-badge-warning'
+            }" id="modal-status-badge" style="font-size:0.75rem; text-transform:uppercase;">
+              ${order.status}
+            </span>
+          </div>
+          <span style="font-size:0.75rem; color:var(--admin-color-text-muted);">
+            Realizado em: ${new Date(order.createdAt).toLocaleDateString('pt-BR')} às ${new Date(order.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} • ID MongoDB: <code>${order._id}</code>
+          </span>
+        </div>
         <button class="admin-modal-close" onclick="closeAdminModal()">&times;</button>
       </div>
-      <div class="admin-modal-body">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th class="text-center">Quantidade</th>
-              <th>Unitário</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${order.items.map(item => `
-              <tr>
-                <td>
-                  <strong>${item.name}</strong>
-                  ${item.size ? `<span class="admin-badge admin-badge-info" style="font-size:0.6rem; padding: 2px 4px; margin-left: 6px;">Tam: ${item.size}</span>` : ''}
-                  ${item.color ? `<span class="admin-badge admin-badge-success" style="font-size:0.6rem; padding: 2px 4px; margin-left: 6px;">Cor: ${item.color}</span>` : ''}
-                </td>
-                <td class="text-center">${item.quantity}</td>
-                <td>R$ ${item.price.toFixed(2)}</td>
-                <td class="fw-bold">R$ ${(item.price * item.quantity).toFixed(2)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div style="text-align: right; margin-top: 24px;">
-          <p style="font-size: 1.1rem; font-weight: 800;">Total do Pedido: <span class="text-success">R$ ${order.totalPrice.toFixed(2)}</span></p>
+
+      <div class="admin-modal-body" style="padding: 24px;">
+        <!-- Two Columns Info Grid -->
+        <div class="order-detail-grid">
+          <!-- Card Cliente -->
+          <div class="order-detail-card">
+            <h4><i class="fas fa-user"></i> Informações do Cliente</h4>
+            <div class="order-info-line">
+              <span class="label">Nome / Destinatário:</span>
+              <strong class="val">${addr.recipientName || (order.user ? order.user.username : 'Cliente')}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">E-mail de Contato:</span>
+              <strong class="val">${order.customerEmail || (order.user ? order.user.email : 'Não informado')}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Telefone:</span>
+              <strong class="val">${clientPhone || 'Não informado'}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">CPF do Comprador:</span>
+              <strong class="val">${order.user?.cpf || 'Consumidor Final'}</strong>
+            </div>
+            ${cleanPhone ? `
+              <div style="margin-top:12px;">
+                <a href="https://api.whatsapp.com/send?phone=55${cleanPhone}&text=Ol%C3%A1%2C%20${encodeURIComponent(addr.recipientName || 'Cliente')}!%20Aqui%20%C3%A9%20da%20MD%20ESSENTIAL%20sobre%20o%20seu%20pedido%20%23${shortId}." target="_blank" class="admin-btn admin-btn-small" style="background:#25D366; color:#ffffff; border:none; width:100%; justify-content:center; display:flex; align-items:center; gap:6px;">
+                  <i class="fab fa-whatsapp"></i> Chamar Cliente no WhatsApp
+                </a>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Card Destino & Frete -->
+          <div class="order-detail-card">
+            <h4><i class="fas fa-truck-moving"></i> Destino da Entrega & Frete</h4>
+            <div class="order-info-line">
+              <span class="label">Estado de Destino:</span>
+              <strong class="val" style="color:#2563eb; font-size:1rem;">
+                <i class="fas fa-map-marker-alt"></i> ${addr.state ? `${addr.state} (Brasil)` : 'SC'}
+              </strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Cidade:</span>
+              <strong class="val">${addr.city || 'Não informada'}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Endereço Completo:</span>
+              <strong class="val" style="font-size:0.8rem; max-width:60%; line-height:1.3;">${fullAddress}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Validação de Frete:</span>
+              <strong class="val text-success">
+                <i class="fas fa-check-circle"></i> Validado (ViaCEP)
+              </strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Modalidade / Envio:</span>
+              <strong class="val">${order.shippingMethod || 'Correios PAC'}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Custo do Frete:</span>
+              <strong class="val">${shippingVal > 0 ? `R$ ${shippingVal.toFixed(2)}` : '<span class="text-success">FRETE GRÁTIS</span>'}</strong>
+            </div>
+            <div class="order-info-line">
+              <span class="label">Código de Rastreio:</span>
+              <strong class="val" id="modal-tracking-display">
+                ${order.trackingCode ? `<a href="/tracking.html?code=${order.trackingCode}" target="_blank" style="color:#2563eb; font-weight:800; text-decoration:underline;">${order.trackingCode} <i class="fas fa-external-link-alt" style="font-size:0.7rem;"></i></a>` : '<span style="color:var(--admin-color-text-muted);">Não emitido</span>'}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Itens do Pedido -->
+        <div class="admin-section-card" style="margin-bottom:20px;">
+          <div class="card-header" style="padding:12px 16px; background:#f1f5f9;">
+            <h4 style="margin:0; font-size:0.85rem; text-transform:uppercase; font-weight:800;">
+              <i class="fas fa-box-open"></i> Itens Comprados no Pedido (${order.items.length})
+            </h4>
+          </div>
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th class="text-center">Variações</th>
+                  <th class="text-center">Quantidade</th>
+                  <th>Preço Unitário</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order.items.map(item => {
+                  const prod = products.find(p => p._id === (item.productId?._id || item.productId));
+                  const img = (prod && prod.images && prod.images[0]) || '';
+                  return `
+                    <tr>
+                      <td>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                          ${img ? `<img src="${img}" alt="${item.name}" style="width:42px; height:52px; object-fit:cover; border-radius:4px; border:1px solid #e2e8f0;" />` : ''}
+                          <div>
+                            <strong style="font-size:0.9rem;">${item.name}</strong>
+                            ${prod ? `<div style="font-size:0.7rem; color:var(--admin-color-text-muted);">${prod.category}</div>` : ''}
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        ${item.size ? `<span class="admin-badge admin-badge-info" style="font-size:0.65rem; padding:2px 6px;">Tam: ${item.size}</span>` : ''}
+                        ${item.color ? `<span class="admin-badge admin-badge-success" style="font-size:0.65rem; padding:2px 6px; margin-left:4px;">Cor: ${item.color}</span>` : ''}
+                      </td>
+                      <td class="text-center" style="font-weight:700;">${item.quantity} un.</td>
+                      <td>R$ ${item.price.toFixed(2)}</td>
+                      <td class="fw-bold">R$ ${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          <!-- Financial Summary Strip -->
+          <div style="background:#f8fafc; padding:16px; border-top:1px solid var(--admin-color-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <span style="font-size:0.8rem; color:var(--admin-color-text-muted);">Forma de Pagamento:</span>
+              <strong style="margin-left:6px; font-size:0.9rem;">${order.paymentMethod || 'PIX'}</strong>
+              ${order.pixCode ? `<span class="admin-badge admin-badge-info" style="font-size:0.65rem; margin-left:8px;">Código PIX Gerado</span>` : ''}
+              ${order.boletoCode ? `<span class="admin-badge admin-badge-info" style="font-size:0.65rem; margin-left:8px;">Boleto Bancário</span>` : ''}
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.85rem; color:var(--admin-color-text-muted);">
+                Subtotal Itens: <strong>R$ ${itemsSubtotal.toFixed(2)}</strong> + Frete: <strong>R$ ${shippingVal.toFixed(2)}</strong>
+              </div>
+              <div style="font-size:1.25rem; font-weight:900; color:var(--admin-color-dark); margin-top:4px;">
+                Total Geral: <span class="text-success">R$ ${order.totalPrice.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção de Edição do Pedido (Exclusivo Administrador) -->
+        <div class="order-detail-card" style="background:#fff; border:2px solid #e2e8f0;">
+          <h4><i class="fas fa-edit"></i> Painel de Edição e Ações do Administrador</h4>
+          <form id="form-edit-order" onsubmit="handleSaveOrder(event, '${order._id}')">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+              <div class="admin-form-group">
+                <label style="font-weight:700; font-size:0.8rem;">Status do Pedido:</label>
+                <select id="edit-modal-status" class="admin-form-control" style="padding:10px; font-weight:700;">
+                  <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Pendente</option>
+                  <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>💰 Pago / Confirmado</option>
+                  <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>📦 Em Separação</option>
+                  <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>🚚 Enviado (Despachado)</option>
+                  <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>✅ Entregue</option>
+                  <option value="canceled" ${order.status === 'canceled' ? 'selected' : ''}>❌ Cancelado</option>
+                </select>
+              </div>
+
+              <div class="admin-form-group">
+                <label style="font-weight:700; font-size:0.8rem;">Transportadora:</label>
+                <input type="text" id="edit-modal-carrier" class="admin-form-control" value="${order.carrier || 'Correios'}" placeholder="Ex: Correios SEDEX, Jadlog, Loggi..." />
+              </div>
+
+              <div class="admin-form-group">
+                <label style="font-weight:700; font-size:0.8rem;">Código de Rastreio:</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="edit-modal-tracking" class="admin-form-control" value="${order.trackingCode || ''}" placeholder="Ex: MD982341829BR" />
+                  <button type="button" class="admin-btn admin-btn-small" onclick="generateOrderTrackingCode()" title="Gerar código padrão Correios/MD">
+                    <i class="fas fa-magic"></i> Gerar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Adicionar Evento de Rastreio Customizado -->
+            <div style="background:#f8fafc; padding:12px; border-radius:6px; margin-bottom:16px; border:1px solid #e2e8f0;">
+              <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:var(--admin-color-text-muted); display:block; margin-bottom:8px;">
+                <i class="fas fa-plus-circle"></i> Adicionar Nova Atualização no Rastreamento (Opcional)
+              </span>
+              <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+                <input type="text" id="edit-modal-event-desc" class="admin-form-control" placeholder="Descrição (ex: Saiu do CD de Sombrio rumo à filial regional)" style="font-size:0.85rem;" />
+                <input type="text" id="edit-modal-event-loc" class="admin-form-control" value="${cityState}" placeholder="Local (ex: Sombrio/SC)" style="font-size:0.85rem;" />
+              </div>
+            </div>
+
+            <!-- Histórico de Eventos de Rastreio -->
+            ${(order.trackingEvents && order.trackingEvents.length > 0) ? `
+              <div style="margin-bottom:16px;">
+                <label style="font-weight:700; font-size:0.78rem; text-transform:uppercase; color:var(--admin-color-text-muted);">Linha do Tempo de Rastreio Registrada:</label>
+                <div class="order-timeline-list">
+                  ${order.trackingEvents.map(ev => `
+                    <div class="order-timeline-item">
+                      <i class="fas fa-check-circle" style="color:#2563eb; margin-top:2px;"></i>
+                      <div style="flex:1;">
+                        <div style="display:flex; justify-content:space-between;">
+                          <strong>${ev.description}</strong>
+                          <span style="font-size:0.7rem; color:var(--admin-color-text-muted);">${new Date(ev.date).toLocaleDateString('pt-BR')} ${new Date(ev.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <span style="font-size:0.72rem; color:#64748b;"><i class="fas fa-map-marker-alt"></i> ${ev.location || 'Sombrio/SC'}</span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
+              <button type="button" class="admin-btn" onclick="closeAdminModal()">Fechar</button>
+              <button type="submit" class="admin-btn admin-btn-primary" id="btn-save-order-changes" style="padding:10px 24px; font-weight:800;">
+                <i class="fas fa-save"></i> SALVAR ALTERAÇÕES DO PEDIDO
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   `;
+
   modal.classList.add('show');
+};
+
+window.viewOrderItems = window.openOrderDetailsModal;
+
+window.generateOrderTrackingCode = function() {
+  const code = `MD${Math.floor(100000000 + Math.random() * 900000000)}BR`;
+  const input = document.getElementById('edit-modal-tracking');
+  if (input) input.value = code;
+  showToast(`Código de rastreio gerado: ${code}`);
+};
+
+window.handleSaveOrder = async function(e, orderId) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-save-order-changes');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+  }
+
+  const status = document.getElementById('edit-modal-status')?.value;
+  const carrier = document.getElementById('edit-modal-carrier')?.value;
+  const trackingCode = document.getElementById('edit-modal-tracking')?.value;
+  const trackingEventDescription = document.getElementById('edit-modal-event-desc')?.value;
+  const trackingLocation = document.getElementById('edit-modal-event-loc')?.value;
+
+  try {
+    const res = await fetch(`/api/admin/orders/${orderId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        status,
+        carrier,
+        trackingCode,
+        trackingEventDescription,
+        trackingLocation
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showToast('✅ Pedido atualizado com sucesso no banco de dados!');
+      // Atualiza o pedido na lista local
+      orders = orders.map(o => o._id === orderId ? data : o);
+      // Recarrega estatísticas e tela ativa
+      loadStats();
+      closeAdminModal();
+      renderActiveTab();
+    } else {
+      showToast(data.message || 'Erro ao atualizar pedido.', 'fa-exclamation-triangle');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> SALVAR ALTERAÇÕES DO PEDIDO';
+      }
+    }
+  } catch (err) {
+    showToast('Erro de conexão ao salvar pedido.', 'fa-exclamation-triangle');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> SALVAR ALTERAÇÕES DO PEDIDO';
+    }
+  }
+};
+
+window.onNotificationClick = async function(notifId, relatedId, type) {
+  // Mark as read
+  await readNotification(notifId);
+  // If related to an order, open the order modal!
+  if (relatedId && (type === 'new_order' || type === 'order_canceled' || type === 'order_shipped' || type === 'payment_approved')) {
+    openOrderDetailsModal(relatedId);
+  } else if (relatedId && (type === 'out_of_stock' || type === 'low_stock')) {
+    switchTab('products');
+  }
 };
 
 window.closeAdminModal = function() {
@@ -1454,7 +1769,7 @@ function renderNotificationsTab(container) {
         ${notifications.length ? `
           <div class="notifications-list">
             ${notifications.map(n => `
-              <div class="notification-item ${n.read ? '' : 'unread'}" id="notif-${n._id}">
+              <div class="notification-item ${n.read ? '' : 'unread'} clickable-row" id="notif-${n._id}" onclick="onNotificationClick('${n._id}', '${n.relatedId || ''}', '${n.type}')" style="cursor: pointer;" title="Clique para ver os detalhes">
                 <div class="notification-icon-wrapper ${n.type}">
                   <i class="fas ${
                     n.type === 'new_order' ? 'fa-shopping-bag' :
@@ -1472,7 +1787,7 @@ function renderNotificationsTab(container) {
                   <span class="notification-time">${new Date(n.createdAt).toLocaleString('pt-BR')}</span>
                 </div>
                 ${!n.read ? `
-                  <button class="admin-btn admin-btn-small" onclick="readNotification('${n._id}')" style="align-self: center;">
+                  <button class="admin-btn admin-btn-small" onclick="event.stopPropagation(); readNotification('${n._id}')" style="align-self: center;">
                     Marcar lida
                   </button>
                 ` : ''}

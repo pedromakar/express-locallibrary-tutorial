@@ -236,6 +236,117 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
+ * PUT /api/admin/orders/:id
+ * Edição completa do pedido pelo administrador (status, frete, endereço, rastreamento, eventos)
+ */
+exports.adminUpdateOrder = async (req, res) => {
+  try {
+    const {
+      status,
+      trackingCode,
+      carrier,
+      shippingPrice,
+      shippingMethod,
+      shippingAddress,
+      customerPhone,
+      customerEmail,
+      trackingEventDescription,
+      trackingLocation
+    } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+
+    const previousStatus = order.status;
+
+    if (status) order.status = status;
+    if (trackingCode !== undefined) order.trackingCode = trackingCode;
+    if (carrier !== undefined) order.carrier = carrier;
+    if (shippingPrice !== undefined) order.shippingPrice = Number(shippingPrice);
+    if (shippingMethod !== undefined) order.shippingMethod = shippingMethod;
+    if (customerPhone !== undefined) order.customerPhone = customerPhone;
+    if (customerEmail !== undefined) order.customerEmail = customerEmail;
+    if (shippingAddress) {
+      order.shippingAddress = {
+        ...order.shippingAddress,
+        ...shippingAddress
+      };
+    }
+
+    // Se foi adicionado um evento customizado de rastreio
+    if (trackingEventDescription && trackingEventDescription.trim()) {
+      order.trackingEvents.push({
+        status: status ? status.toUpperCase() : 'ATUALIZACAO',
+        description: trackingEventDescription.trim(),
+        location: trackingLocation || (order.shippingAddress?.city ? `${order.shippingAddress.city}/${order.shippingAddress.state}` : 'Centro Logístico - Sombrio/SC'),
+        date: new Date()
+      });
+    }
+
+    // Disparos automáticos se o status mudou para 'shipped' ou 'delivered'
+    if (status === 'shipped' && previousStatus !== 'shipped') {
+      const generatedCode = trackingCode || order.trackingCode || `MD${Math.floor(100000000 + Math.random() * 900000000)}BR`;
+      order.trackingCode = generatedCode;
+
+      if (!trackingEventDescription) {
+        order.trackingEvents.push({
+          status: 'EM_TRANSITO',
+          description: 'Objeto postado e em trânsito para o destino.',
+          location: 'Centro de Distribuição - Sombrio/SC',
+          date: new Date()
+        });
+      }
+
+      emailService.sendOrderShippedEmail({
+        order,
+        user: { username: order.shippingAddress?.recipientName || 'Cliente', email: order.customerEmail }
+      }).catch(() => {});
+
+      whatsappService.notifyOrderShipped(order).catch(() => {});
+
+      Notification.create({
+        type: 'order_shipped',
+        title: 'Pedido enviado',
+        message: `Pedido #${order._id.toString().slice(-6).toUpperCase()} despachado (${generatedCode}).`,
+        relatedId: order._id.toString(),
+      }).catch(() => {});
+    } else if (status === 'delivered' && previousStatus !== 'delivered') {
+      if (!trackingEventDescription) {
+        order.trackingEvents.push({
+          status: 'ENTREGUE',
+          description: 'Objeto entregue ao destinatário com sucesso.',
+          location: order.shippingAddress?.city ? `${order.shippingAddress.city}/${order.shippingAddress.state}` : 'Endereço de Entrega',
+          date: new Date()
+        });
+      }
+      whatsappService.notifyOrderDelivered(order).catch(() => {});
+    } else if (status === 'canceled' && previousStatus !== 'canceled') {
+      // Estorna produtos ao estoque
+      for (const item of order.items) {
+        const p = await Product.findById(item.productId);
+        if (p) {
+          p.countInStock += item.quantity;
+          await p.save();
+        }
+      }
+      Notification.create({
+        type: 'order_canceled',
+        title: 'Pedido cancelado',
+        message: `Pedido #${order._id.toString().slice(-6).toUpperCase()} cancelado e estoque estornado.`,
+        relatedId: order._id.toString(),
+      }).catch(() => {});
+    }
+
+    const updated = await order.save();
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao atualizar pedido', error: err.message });
+  }
+};
+
+/**
  * GET /api/orders/track/:query
  * Rastreamento público de pedidos em tempo real (por código de rastreio ou ID do pedido)
  */

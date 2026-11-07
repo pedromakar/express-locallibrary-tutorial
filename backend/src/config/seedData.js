@@ -2,6 +2,96 @@ const bcrypt = require('bcryptjs');
 
 const products = [
   {
+    name: 'Camiseta Oversized MD Street',
+    category: 'Camisetas',
+    price: 159.9,
+    description: 'A icônica Camiseta Oversized MD Street combina a estética streetwear contemporânea com conforto e atitude. Confeccionada em algodão premium 100% de alta gramatura com toque peletizado macio e modelagem boxy com ombros caídos. Apresenta o logo minimalista MD estampado no centro do peito e, nas costas, a imponente arte em grafite "MD Essential" acompanhada pelo manifesto oficial de autenticidade e disciplina da marca.',
+    images: [
+      '/images/products/md-oversized-street-model-front.jpg',
+      '/images/products/md-oversized-street-model-back.jpg',
+      '/images/products/md-oversized-street-mockup-duo.png',
+      '/images/products/md-oversized-street-front.jpg'
+    ],
+    countInStock: 35,
+    badge: 'DROP',
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      {
+        name: 'Preto',
+        hex: '#000000',
+        images: [
+          '/images/products/md-oversized-street-model-front.jpg',
+          '/images/products/md-oversized-street-model-back.jpg',
+          '/images/products/md-oversized-street-mockup-duo.png',
+          '/images/products/md-oversized-street-front.jpg'
+        ]
+      }
+    ],
+    benefits: ['Modelagem Boxy Oversized', 'Algodão Premium 100% Alta Gramatura', 'Estampa Graffiti MD Essential nas Costas', 'Gola Redonda Encorpada Antideformação', 'Toque Macio Peletizado'],
+    rating: 5.0,
+    numReviews: 2,
+    reviews: [
+      {
+        name: 'Lucas Moreira',
+        rating: 5,
+        comment: 'Caimento surreal! O modelo veste muito bem, o tecido é pesado de verdade e a estampa nas costas é absurda de linda.',
+        images: ['/images/products/md-oversized-street-model-back.jpg'],
+        verifiedPurchase: true,
+        createdAt: new Date('2026-10-28')
+      },
+      {
+        name: 'Gabriel Costa',
+        rating: 5,
+        comment: 'Melhor oversized que já comprei. O algodão é muito gostoso, toque peletizado e a gola encorpada não esgarça.',
+        images: ['/images/products/md-oversized-street-model-front.jpg'],
+        verifiedPurchase: true,
+        createdAt: new Date('2026-11-01')
+      }
+    ]
+  },
+  {
+    name: 'Camiseta Raglan Poliamida',
+    category: 'Camisetas',
+    price: 139.9,
+    description: 'Desenvolvida para atletas que buscam performance máxima e mobilidade irrestrita. Fabricada em poliamida tecnológica ultra leve com elastano, proporcionando conforto térmico com toque gelado, elasticidade multidirecional e secagem ultra rápida (QuickDry). O corte com mangas raglan valoriza a definição dos ombros e peitoral, eliminando o atrito das costuras nas articulações durante os treinos mais intensos. Logo MD minimalista no centro do peito.',
+    images: [
+      '/images/products/md-raglan-poliamida-black.jpg'
+    ],
+    countInStock: 40,
+    badge: 'PERFORMANCE',
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      {
+        name: 'Preto',
+        hex: '#000000',
+        images: [
+          '/images/products/md-raglan-poliamida-black.jpg'
+        ]
+      }
+    ],
+    benefits: ['Poliamida Tecnológica com Toque Gelado', 'Corte Raglan Anatômico', 'Secagem Ultra Rápida (QuickDry)', 'Respirabilidade Térmica e Proteção UV50+', 'Tecido Antiodor e Alta Elasticidade'],
+    rating: 5.0,
+    numReviews: 2,
+    reviews: [
+      {
+        name: 'Rodrigo Nogueira',
+        rating: 5,
+        comment: 'Tecido muito leve, toque gelado perfeito pra treinar perna ou cardio pesado. O corte raglan encaixa no ombro de um jeito sem igual!',
+        images: ['/images/products/md-raglan-poliamida-black.jpg'],
+        verifiedPurchase: true,
+        createdAt: new Date('2026-10-25')
+      },
+      {
+        name: 'Matheus Lima',
+        rating: 5,
+        comment: 'A qualidade da poliamida é impressionante, não esquenta e seca num piscar de olhos.',
+        images: [],
+        verifiedPurchase: true,
+        createdAt: new Date('2026-11-02')
+      }
+    ]
+  },
+  {
     name: 'Camiseta Oversized Hunter',
     category: 'Camisetas',
     price: 149.9,
@@ -295,12 +385,15 @@ async function seedInitialData(models) {
       console.log('✅ Configurações visuais padrão da loja criadas.');
     }
 
-    // 4. Products
-    const prodCount = await Product.countDocuments();
-    if (prodCount === 0) {
-      await Product.insertMany(products);
-      console.log(`✅ Catálogo MD Essential carregado com ${products.length} produtos.`);
+    // 4. Products (Garante que os produtos principais e novas peças estejam sempre cadastrados)
+    for (const p of products) {
+      await Product.findOneAndUpdate(
+        { name: p.name },
+        { $set: p },
+        { upsert: true, new: true }
+      );
     }
+    console.log(`✅ Catálogo MD Essential sincronizado com ${products.length} produtos.`);
 
     // 5. Sample Orders (for Charts, Dashboard & Account history)
     const orderCount = await Order.countDocuments();

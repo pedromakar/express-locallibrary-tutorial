@@ -29,6 +29,9 @@ router.post('/webhooks/whatsapp', orderController.handleWhatsAppWebhook);
 // GET /api/admin/orders
 router.get('/admin/orders', auth, admin, orderController.getAllOrders);
 
+// PUT /api/admin/orders/:id
+router.put('/admin/orders/:id', auth, admin, orderController.adminUpdateOrder);
+
 // PUT /api/admin/orders/:id/status
 router.put('/admin/orders/:id/status', auth, admin, orderController.updateOrderStatus);
 
