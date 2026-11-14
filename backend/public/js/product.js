@@ -90,11 +90,14 @@ async function renderProduct() {
             
             <div class="divider"></div>
 
-            <p class="description-text">${product.description}</p>
+            <div class="product-description-block">
+              <h3 class="product-description-title mobile-only"><i class="fas fa-align-left"></i> DETALHES DO PRODUTO</h3>
+              <p class="description-text">${product.description}</p>
+            </div>
 
             <!-- Color Selector -->
             ${product.colors && product.colors.length > 0 ? `
-              <div class="selector-box">
+              <div class="selector-box selector-box-color">
                 <label class="selector-label">COR: <span id="selected-color-name">${selectedColor}</span></label>
                 <div class="color-swatches">
                   ${product.colors.map(c => `
@@ -109,7 +112,7 @@ async function renderProduct() {
 
             <!-- Size Selector -->
             ${product.sizes && product.sizes.length > 0 ? `
-              <div class="selector-box">
+              <div class="selector-box selector-box-size">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="selector-label">TAMANHO</label>
                   <button class="text-link small" id="open-measurements">TABELA DE MEDIDAS</button>
@@ -123,7 +126,7 @@ async function renderProduct() {
             ` : ''}
 
             <!-- Quantity Selector -->
-            <div class="selector-box">
+            <div class="selector-box selector-box-qty">
               <label class="selector-label">QUANTIDADE</label>
               <div class="qty-selector">
                 <button class="qty-selector-btn" id="qty-minus">−</button>
