@@ -11,7 +11,9 @@ let fallbackSettings = {
   heroSubtitle: 'Alta performance e isolamento térmico inteligente. Desenvolvido para superar o frio com atitude.',
   heroButtonText: 'VER COLEÇÃO',
   heroBannerUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1600&q=80',
-  categoryImages: {}
+  categoryImages: {},
+  whatsappNumber: process.env.WHATSAPP_PHONE || '5571999313160',
+  freeShippingThreshold: 198
 };
 
 function isDbConnected() {
@@ -45,7 +47,9 @@ exports.updateSettings = async (req, res) => {
       heroSubtitle,
       heroButtonText,
       heroBannerUrl,
-      categoryImages
+      categoryImages,
+      whatsappNumber,
+      freeShippingThreshold
     } = req.body;
 
     if (!isDbConnected()) {
@@ -59,7 +63,9 @@ exports.updateSettings = async (req, res) => {
         heroSubtitle: heroSubtitle ?? fallbackSettings.heroSubtitle,
         heroButtonText: heroButtonText ?? fallbackSettings.heroButtonText,
         heroBannerUrl: heroBannerUrl ?? fallbackSettings.heroBannerUrl,
-        categoryImages: categoryImages ? { ...fallbackSettings.categoryImages, ...categoryImages } : fallbackSettings.categoryImages
+        categoryImages: categoryImages ? { ...fallbackSettings.categoryImages, ...categoryImages } : fallbackSettings.categoryImages,
+        whatsappNumber: whatsappNumber ?? fallbackSettings.whatsappNumber,
+        freeShippingThreshold: freeShippingThreshold ?? fallbackSettings.freeShippingThreshold
       };
       return res.json(fallbackSettings);
     }
@@ -77,6 +83,8 @@ exports.updateSettings = async (req, res) => {
     if (heroSubtitle !== undefined) settings.heroSubtitle = heroSubtitle;
     if (heroButtonText !== undefined) settings.heroButtonText = heroButtonText;
     if (heroBannerUrl !== undefined) settings.heroBannerUrl = heroBannerUrl;
+    if (whatsappNumber !== undefined) settings.whatsappNumber = whatsappNumber;
+    if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = freeShippingThreshold;
     if (categoryImages !== undefined) {
       settings.categoryImages = categoryImages;
     }

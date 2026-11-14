@@ -3,7 +3,16 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   description: { type: String, trim: true },
-  category: { type: String, trim: true, default: 'Geral' },
+  gender: { 
+    type: String, 
+    enum: ['masculino', 'feminino', 'unissex'], 
+    default: 'unissex', 
+    trim: true,
+    index: true 
+  },
+  category: { type: String, trim: true, default: 'Geral', index: true },
+  subCategory: { type: String, trim: true },
+  collectionName: { type: String, trim: true },
   price: { type: Number, required: true, default: 0 },
   countInStock: { type: Number, default: 0 },
   badge: { type: String, trim: true },

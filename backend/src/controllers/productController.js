@@ -1,198 +1,48 @@
 const mongoose = require('mongoose');
 const Product = require('../models/product');
+const { products: seedCatalog } = require('../config/seedData');
 
-// Fallback static data used when MongoDB is unavailable
-const fallbackProducts = [
-  {
-    _id: 'md_oversized_street',
-    name: 'Camiseta Oversized MD Street',
-    category: 'Camisetas',
-    price: 159.9,
-    description: 'A icônica Camiseta Oversized MD Street combina a estética streetwear contemporânea com conforto e atitude. Confeccionada em algodão premium 100% de alta gramatura com toque peletizado macio e modelagem boxy com ombros caídos. Apresenta o logo minimalista MD estampado no centro do peito e, nas costas, a imponente arte em grafite "MD Essential" acompanhada pelo manifesto oficial de autenticidade e disciplina da marca.',
-    image: '/images/products/md-oversized-street-model-front.jpg',
-    images: [
-      '/images/products/md-oversized-street-model-front.jpg',
-      '/images/products/md-oversized-street-model-back.jpg',
-      '/images/products/md-oversized-street-mockup-duo.png',
-      '/images/products/md-oversized-street-front.jpg'
-    ],
-    countInStock: 35,
-    badge: 'DROP',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      {
-        name: 'Preto',
-        hex: '#000000',
-        images: [
-          '/images/products/md-oversized-street-model-front.jpg',
-          '/images/products/md-oversized-street-model-back.jpg',
-          '/images/products/md-oversized-street-mockup-duo.png',
-          '/images/products/md-oversized-street-front.jpg'
-        ]
-      }
-    ],
-    benefits: ['Modelagem Boxy Oversized', 'Algodão Premium 100% Alta Gramatura', 'Estampa Graffiti MD Essential nas Costas', 'Gola Redonda Encorpada Antideformação', 'Toque Macio Peletizado'],
-    rating: 5.0,
-    numReviews: 2,
-    reviews: [
-      {
-        name: 'Lucas Moreira',
-        rating: 5,
-        comment: 'Caimento surreal! O modelo veste muito bem, o tecido é pesado de verdade e a estampa nas costas é absurda de linda.',
-        images: ['/images/products/md-oversized-street-model-back.jpg'],
-        verifiedPurchase: true,
-        createdAt: new Date('2026-10-28')
-      },
-      {
-        name: 'Gabriel Costa',
-        rating: 5,
-        comment: 'Melhor oversized que já comprei. O algodão é muito gostoso, toque peletizado e a gola encorpada não esgarça.',
-        images: ['/images/products/md-oversized-street-model-front.jpg'],
-        verifiedPurchase: true,
-        createdAt: new Date('2026-11-01')
-      }
-    ]
-  },
-  {
-    _id: 'md_raglan_poliamida',
-    name: 'Camiseta Raglan Poliamida',
-    category: 'Camisetas',
-    price: 139.9,
-    description: 'Desenvolvida para atletas que buscam performance máxima e mobilidade irrestrita. Fabricada em poliamida tecnológica ultra leve com elastano, proporcionando conforto térmico com toque gelado, elasticidade multidirecional e secagem ultra rápida (QuickDry). O corte com mangas raglan valoriza a definição dos ombros e peitoral, eliminando o atrito das costuras nas articulações durante os treinos mais intensos. Logo MD minimalista no centro do peito.',
-    image: '/images/products/md-raglan-poliamida-black.jpg',
-    images: [
-      '/images/products/md-raglan-poliamida-black.jpg'
-    ],
-    countInStock: 40,
-    badge: 'PERFORMANCE',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      {
-        name: 'Preto',
-        hex: '#000000',
-        images: [
-          '/images/products/md-raglan-poliamida-black.jpg'
-        ]
-      }
-    ],
-    benefits: ['Poliamida Tecnológica com Toque Gelado', 'Corte Raglan Anatômico', 'Secagem Ultra Rápida (QuickDry)', 'Respirabilidade Térmica e Proteção UV50+', 'Tecido Antiodor e Alta Elasticidade'],
-    rating: 5.0,
-    numReviews: 2,
-    reviews: [
-      {
-        name: 'Rodrigo Nogueira',
-        rating: 5,
-        comment: 'Tecido muito leve, toque gelado perfeito pra treinar perna ou cardio pesado. O corte raglan encaixa no ombro de um jeito sem igual!',
-        images: ['/images/products/md-raglan-poliamida-black.jpg'],
-        verifiedPurchase: true,
-        createdAt: new Date('2026-10-25')
-      },
-      {
-        name: 'Matheus Lima',
-        rating: 5,
-        comment: 'A qualidade da poliamida é impressionante, não esquenta e seca num piscar de olhos.',
-        images: [],
-        verifiedPurchase: true,
-        createdAt: new Date('2026-11-02')
-      }
-    ]
-  },
-  {
-    _id: 'apex_dry_1',
-    name: 'Camiseta Apex Dry Evolution',
-    category: 'Camisetas',
-    price: 149.9,
-    description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
-    image: 'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
-    images: [
-      'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
-    ],
-    countInStock: 25,
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      {
-        name: 'Cinza',
-        hex: '#808080',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
-        ]
-      },
-      {
-        name: 'Azul Marinho',
-        hex: '#000080',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050157&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc_1.jpg?v=1775050157&width=832'
-        ]
-      }
-    ],
-    benefits: ['Sem Costura (Seamless)', 'Tecnologia Dry', 'Modelagem Anatômica', 'Secagem Rápida']
-  },
-  {
-    _id: 'p1',
-    name: 'Top Active Mesh',
-    category: 'Tops e Camisetas',
-    price: 129.9,
-    description: 'Top de treino com tecido respirável e design moderno.',
-    image: 'https://images.unsplash.com/photo-1564468781196-eb559f846169?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1564468781196-eb559f846169?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 18,
-  },
-  {
-    _id: 'p2',
-    name: 'Legging Power',
-    category: 'Leggings e Calças',
-    price: 189.0,
-    description: 'Legging cintura alta com compressão leve para todos os treinos.',
-    image: 'https://images.unsplash.com/photo-1579758629930-0364c59fb3ec?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1579758629930-0364c59fb3ec?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 12,
-  },
-  {
-    _id: 'p3',
-    name: 'Camiseta Dry Fit',
-    category: 'Tops e Camisetas',
-    price: 99.9,
-    description: 'Camiseta seca rápido, perfeita para corrida e academia.',
-    image: 'https://images.unsplash.com/photo-1526401485004-8d1d5ef96588?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1526401485004-8d1d5ef96588?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 26,
-  },
-  {
-    _id: 'p4',
-    name: 'Short Flex',
-    category: 'Coleções Fitness',
-    price: 109.5,
-    description: 'Short leve com bolsos ocultos para maior praticidade.',
-    image: 'https://images.unsplash.com/photo-1508606572321-901ea4437072?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1508606572321-901ea4437072?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 22,
-  },
-  {
-    _id: 'p5',
-    name: 'Legging Sculpt',
-    category: 'Leggings e Calças',
-    price: 199.9,
-    description: 'Modelagem slim e toque macio para flexibilidade total.',
-    image: 'https://images.unsplash.com/photo-1599533767041-1a0d9c4c0377?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1599533767041-1a0d9c4c0377?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 10,
-  },
-  {
-    _id: 'p6',
-    name: 'Kits de Meias',
-    category: 'Acessórios',
-    price: 49.9,
-    description: 'Meias esportivas antiderrapantes para treinos intensos.',
-    image: 'https://images.unsplash.com/photo-1528701800489-20b9f7462f8c?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1528701800489-20b9f7462f8c?auto=format&fit=crop&w=800&q=80'],
-    countInStock: 34,
-  },
-];
+// Normalized category regex generator for aliases, plurals and variations
+function normalizeCategoryRegex(category) {
+  if (!category) return null;
+  const clean = category.trim().toLowerCase();
+
+  if (/^molet/i.test(clean) || /^casac/i.test(clean)) {
+    return /^(moletons?|casacos?)$/i;
+  }
+  if (/^calc/i.test(clean) || /^calç/i.test(clean)) {
+    return /^(calças?|calcas?|pantalonas?)$/i;
+  }
+  if (/^camiset/i.test(clean) || /^t-?shirt/i.test(clean)) {
+    return /^(camisetas?|t-?shirts?)$/i;
+  }
+  if (/^regat/i.test(clean) || /^tank/i.test(clean)) {
+    return /^(regatas?|tanks?)$/i;
+  }
+  if (/^short/i.test(clean) || /^bermud/i.test(clean)) {
+    return /^(shorts?|bermudas?)$/i;
+  }
+  if (/^legging/i.test(clean)) {
+    return /^(leggings?)$/i;
+  }
+  if (/^cropped/i.test(clean)) {
+    return /^(croppeds?)$/i;
+  }
+  if (/^top/i.test(clean)) {
+    return /^(tops?)$/i;
+  }
+  if (/^acess/i.test(clean)) {
+    return /^(acess[oó]rios?)$/i;
+  }
+  return new RegExp(`^${clean}s?$`, 'i');
+}
+
+// Fallback static data synchronized with official seedCatalog
+const fallbackProducts = seedCatalog.map((p, idx) => ({
+  _id: p._id || `prod_${idx + 1}_${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+  ...p,
+  image: p.image || (p.images && p.images[0]) || ''
+}));
 
 function isDbConnected() {
   return mongoose.connection.readyState === 1;
@@ -200,12 +50,25 @@ function isDbConnected() {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, search, color, size } = req.query;
+    const { category, search, color, size, gender, publico } = req.query;
+    const targetGender = (gender || publico || '').toLowerCase();
 
     const filterFallback = (data) => {
       let filtered = [...data];
+
+      if (targetGender === 'masculino') {
+        filtered = filtered.filter(p => !p.gender || p.gender === 'masculino' || p.gender === 'unissex');
+      } else if (targetGender === 'feminino') {
+        filtered = filtered.filter(p => p.gender === 'feminino' || p.gender === 'unissex');
+      } else if (targetGender === 'unissex') {
+        filtered = filtered.filter(p => p.gender === 'unissex');
+      }
+
       if (category) {
-        filtered = filtered.filter((p) => p.category?.toLowerCase() === category.toLowerCase());
+        const catRegex = normalizeCategoryRegex(category);
+        if (catRegex) {
+          filtered = filtered.filter(p => catRegex.test(p.category || ''));
+        }
       }
       if (color) {
         filtered = filtered.filter((p) => p.colors?.some(c => c.name?.toLowerCase().includes(color.toLowerCase())));
@@ -231,8 +94,20 @@ exports.getProducts = async (req, res) => {
     }
 
     const filter = {};
+
+    if (targetGender === 'masculino') {
+      filter.gender = { $in: ['masculino', 'unissex'] };
+    } else if (targetGender === 'feminino') {
+      filter.gender = { $in: ['feminino', 'unissex'] };
+    } else if (targetGender === 'unissex') {
+      filter.gender = 'unissex';
+    }
+
     if (category) {
-      filter.category = { $regex: new RegExp(`^${category}$`, 'i') };
+      const catRegex = normalizeCategoryRegex(category);
+      if (catRegex) {
+        filter.category = { $regex: catRegex };
+      }
     }
     if (color) {
       filter['colors.name'] = { $regex: color, $options: 'i' };
@@ -261,9 +136,17 @@ exports.getProducts = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
   try {
+    const targetGender = (req.query.gender || req.query.publico || '').toLowerCase();
+
     if (!isDbConnected()) {
+      let filtered = [...fallbackProducts];
+      if (targetGender === 'masculino') {
+        filtered = filtered.filter(p => !p.gender || p.gender === 'masculino' || p.gender === 'unissex');
+      } else if (targetGender === 'feminino') {
+        filtered = filtered.filter(p => p.gender === 'feminino' || p.gender === 'unissex');
+      }
       const categoryMap = {};
-      for (const p of fallbackProducts) {
+      for (const p of filtered) {
         const cat = p.category || 'Geral';
         categoryMap[cat] = (categoryMap[cat] || 0) + 1;
       }
@@ -271,7 +154,19 @@ exports.getCategories = async (req, res) => {
       categories.sort((a, b) => a.name.localeCompare(b.name));
       return res.json(categories);
     }
-    const categories = await Product.aggregate([
+
+    const matchStage = {};
+    if (targetGender === 'masculino') {
+      matchStage.gender = { $in: ['masculino', 'unissex'] };
+    } else if (targetGender === 'feminino') {
+      matchStage.gender = { $in: ['feminino', 'unissex'] };
+    }
+
+    const pipeline = [];
+    if (Object.keys(matchStage).length > 0) {
+      pipeline.push({ $match: matchStage });
+    }
+    pipeline.push(
       {
         $group: {
           _id: { $ifNull: ['$category', 'Geral'] },
@@ -279,13 +174,22 @@ exports.getCategories = async (req, res) => {
         },
       },
       { $project: { _id: 0, name: '$_id', count: 1 } },
-      { $sort: { name: 1 } },
-    ]);
+      { $sort: { name: 1 } }
+    );
+
+    const categories = await Product.aggregate(pipeline);
     res.json(categories.length ? categories : [{ name: 'Geral', count: 0 }]);
   } catch (err) {
     // Fallback categories from static data
+    let filtered = [...fallbackProducts];
+    const targetGender = (req.query.gender || req.query.publico || '').toLowerCase();
+    if (targetGender === 'masculino') {
+      filtered = filtered.filter(p => !p.gender || p.gender === 'masculino' || p.gender === 'unissex');
+    } else if (targetGender === 'feminino') {
+      filtered = filtered.filter(p => p.gender === 'feminino' || p.gender === 'unissex');
+    }
     const categoryMap = {};
-    for (const p of fallbackProducts) {
+    for (const p of filtered) {
       const cat = p.category || 'Geral';
       categoryMap[cat] = (categoryMap[cat] || 0) + 1;
     }

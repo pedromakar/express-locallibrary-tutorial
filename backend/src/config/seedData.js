@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const products = [
   {
     name: 'Camiseta Oversized MD Street',
+    gender: 'masculino',
     category: 'Camisetas',
     price: 159.9,
     description: 'A icônica Camiseta Oversized MD Street combina a estética streetwear contemporânea com conforto e atitude. Confeccionada em algodão premium 100% de alta gramatura com toque peletizado macio e modelagem boxy com ombros caídos. Apresenta o logo minimalista MD estampado no centro do peito e, nas costas, a imponente arte em grafite "MD Essential" acompanhada pelo manifesto oficial de autenticidade e disciplina da marca.',
@@ -51,6 +52,7 @@ const products = [
   },
   {
     name: 'Camiseta Raglan Poliamida',
+    gender: 'masculino',
     category: 'Camisetas',
     price: 139.9,
     description: 'Desenvolvida para atletas que buscam performance máxima e mobilidade irrestrita. Fabricada em poliamida tecnológica ultra leve com elastano, proporcionando conforto térmico com toque gelado, elasticidade multidirecional e secagem ultra rápida (QuickDry). O corte com mangas raglan valoriza a definição dos ombros e peitoral, eliminando o atrito das costuras nas articulações durante os treinos mais intensos. Logo MD minimalista no centro do peito.',
@@ -93,6 +95,7 @@ const products = [
   },
   {
     name: 'Camiseta Oversized Hunter',
+    gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
     description: 'Camiseta Oversized Hunter que combina conforto absoluto com estilo. Tecido de alta performance permite movimento livre durante treinos intensos e uso casual. Design amplo oferece liberdade total de movimento sem comprometer a qualidade.',
@@ -147,6 +150,7 @@ const products = [
   },
   {
     name: 'Camiseta Apex Dry Evolution',
+    gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
     description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
@@ -193,11 +197,12 @@ const products = [
   },
   {
     name: 'Regata Canelada "Apex Cut"',
+    gender: 'masculino',
     category: 'Regatas',
     price: 99.9,
     description: 'Ajuste anatômico que valoriza o shape. Tecido canelado premium de alta elasticidade, desenvolvido para máxima performance e conforto durante o treino.',
     images: [
-      'https://images.unsplash.com/photo-1598971639058-9997c0d73d0c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1597452485669-2c7bb5fef90d?auto=format&fit=crop&w=800&q=80'
     ],
     countInStock: 50,
@@ -212,6 +217,7 @@ const products = [
   },
   {
     name: 'Oversized T-shirt "Street Pump"',
+    gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
     description: 'Modelagem boxy moderna com ombros caídos. Algodão premium de alta gramatura que mantém a estrutura mesmo após várias lavagens.',
@@ -230,6 +236,7 @@ const products = [
   },
   {
     name: 'Shorts "Velocity Mesh"',
+    gender: 'masculino',
     category: 'Shorts',
     price: 129.9,
     description: 'Tecido mesh respirável com forro interno de compressão. Projetado para oferecer liberdade total de movimento e suporte.',
@@ -248,7 +255,8 @@ const products = [
   },
   {
     name: 'Moletom "Heavy Bulk Core"',
-    category: 'Casacos',
+    gender: 'masculino',
+    category: 'Moletons',
     price: 299.9,
     description: 'Estrutura pesada (3F) e capuz estruturado. Perfeito para o pré e pós treino, oferecendo aquecimento e estilo impecáveis.',
     images: [
@@ -265,12 +273,32 @@ const products = [
     benefits: ['Algodão 3 Cabos Heavy', 'Capuz Estruturado', 'Bolsos Canguru', 'Corte Premium']
   },
   {
+    name: 'Calça Jogger Tech Fleece "Apex Pro"',
+    gender: 'masculino',
+    category: 'Calças',
+    price: 239.9,
+    description: 'Calça Jogger Tech Fleece desenvolvida para conforto térmico e mobilidade extrema. Corte tapered moderno que afunila nas pernas, cós elástico com cordão de ajuste premium e bolsos laterais com zíper selado.',
+    images: [
+      'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1517438476312-10d79c077509?auto=format&fit=crop&w=800&q=80'
+    ],
+    countInStock: 30,
+    badge: 'NOVO',
+    sizes: ['P', 'M', 'G', 'GG'],
+    colors: [
+      { name: 'Preto', hex: '#000000' },
+      { name: 'Cinza Chumbo', hex: '#333333' }
+    ],
+    benefits: ['Tech Fleece Térmico', 'Corte Tapered Anatômico', 'Bolsos com Zíper Selado', 'Cós Ajustável com Cordão']
+  },
+  {
     name: 'Legging "CoreFlex"',
-    category: 'Feminino',
+    gender: 'feminino',
+    category: 'Leggings',
     price: 179.9,
     description: 'Cintura alta e zero transparência. Desenvolvida com tecnologia de alta performance para treinos intensos de agachamento.',
     images: [
-      'https://images.unsplash.com/photo-1594737625785-c2d0b7d0e3a7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80'
     ],
     countInStock: 60,
@@ -284,7 +312,8 @@ const products = [
   },
   {
     name: 'Cropped "Alpha Cut Women"',
-    category: 'Feminino',
+    gender: 'feminino',
+    category: 'Croppeds',
     price: 89.9,
     description: 'Corte moderno que valoriza a silhueta. Tecido leve com tecnologia Dry que absorve o suor e mantém a temperatura ideal.',
     images: [
@@ -300,6 +329,44 @@ const products = [
       { name: 'Lilás', hex: '#C8A2C8' }
     ],
     benefits: ['Tecido Tecnologia Dry', 'Corte Alpha', 'Proteção UV', 'Antiodor']
+  },
+  {
+    name: 'Top Feminino Impact Seamless',
+    gender: 'feminino',
+    category: 'Tops',
+    price: 109.9,
+    description: 'Top esportivo de alta sustentação com tecnologia seamless sem costura. Alças duplas reforçadas e bojo removível para máximo conforto durante treinos de alta intensidade.',
+    images: [
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80'
+    ],
+    countInStock: 35,
+    badge: 'PERFORMANCE',
+    sizes: ['P', 'M', 'G'],
+    colors: [
+      { name: 'Preto', hex: '#000000' },
+      { name: 'Vinho', hex: '#722F37' }
+    ],
+    benefits: ['Sem Costura (Seamless)', 'Alta Sustentação', 'Bojo Removível', 'Respirabilidade Térmica']
+  },
+  {
+    name: 'Shorts Feminino Biker CoreFlex',
+    gender: 'feminino',
+    category: 'Shorts',
+    price: 119.9,
+    description: 'Shorts estilo biker com cintura alta modeladora, cós duplo e tecido de poliamida com elastano de alta densidade sem transparência.',
+    images: [
+      'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80'
+    ],
+    countInStock: 40,
+    badge: 'NOVO',
+    sizes: ['P', 'M', 'G'],
+    colors: [
+      { name: 'Preto', hex: '#000000' },
+      { name: 'Cinza', hex: '#808080' }
+    ],
+    benefits: ['Zero Transparência', 'Cintura Alta Modeladora', 'Comprimento Meia Coxa Antiassadura', 'Secagem Rápida']
   }
 ];
 
@@ -314,11 +381,16 @@ const defaultSettings = {
   heroBannerUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1600&q=80',
   categoryImages: {
     'Camisetas': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-    'Regatas': 'https://images.unsplash.com/photo-1583454110551-21f2fa200181?auto=format&fit=crop&w=800&q=80',
+    'Regatas': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80',
     'Shorts': 'https://images.unsplash.com/photo-1591117207239-788bf8de6c3b?auto=format&fit=crop&w=800&q=80',
-    'Feminino': 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
-    'Casacos': 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80'
-  }
+    'Calças': 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
+    'Moletons': 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80',
+    'Leggings': 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
+    'Croppeds': 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
+    'Tops': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80'
+  },
+  whatsappNumber: '5571999313160',
+  freeShippingThreshold: 198
 };
 
 async function seedInitialData(models) {

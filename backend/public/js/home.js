@@ -8,7 +8,8 @@ const CATEGORY_IMAGES = {
   'camisetas': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
   'tops e camisetas': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
   'tops': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-  'shorts': 'https://images.unsplash.com/photo-1508606572321-901ea4437072?auto=format&fit=crop&w=800&q=80',
+  'croppeds': 'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
+  'shorts': 'https://images.unsplash.com/photo-1591117207239-788bf8de6c3b?auto=format&fit=crop&w=800&q=80',
   'leggings e calças': 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
   'leggings': 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
   'calças': 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
@@ -46,7 +47,7 @@ function getCategoryImage(categoryName, settings) {
 
 function renderFluidCategoryCard(category, settings) {
   const imgUrl = getCategoryImage(category.name, settings);
-  const categoryLink = `/category.html?id=${encodeURIComponent(category.name)}`;
+  const categoryLink = `/products?category=${encodeURIComponent(category.name)}`;
   return `
     <div class="category-carousel-item">
       <a href="${categoryLink}" class="fluid-category-card">
@@ -166,7 +167,7 @@ function render(products, categories, settings) {
       <section class="section" style="padding-top: 20px; padding-bottom: 60px;">
         <div class="container-custom">
           <div class="spotlight-grid">
-            <a href="/products?category=Camisetas" class="spotlight-card">
+            <a href="/products?gender=masculino" class="spotlight-card">
               <img src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80" alt="Coleção Masculina" />
               <div class="spotlight-overlay"></div>
               <div class="spotlight-content">
@@ -176,7 +177,7 @@ function render(products, categories, settings) {
               </div>
             </a>
 
-            <a href="/products?category=Leggings" class="spotlight-card">
+            <a href="/products?gender=feminino" class="spotlight-card">
               <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80" alt="Coleção Feminina" />
               <div class="spotlight-overlay"></div>
               <div class="spotlight-content">

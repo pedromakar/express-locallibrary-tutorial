@@ -220,8 +220,7 @@ async function renderCheckout() {
   }
 
   if (!token) {
-    alert('Você precisa estar logado para finalizar a compra.');
-    window.location.href = '/login';
+    window.location.href = '/login.html?redirect=checkout';
     return;
   }
 
@@ -236,8 +235,7 @@ async function renderCheckout() {
     } else {
       localStorage.removeItem('md-essential-admin-token');
       localStorage.removeItem('username');
-      alert('Sessão expirada. Por favor, faça login novamente.');
-      window.location.href = '/login';
+      window.location.href = '/login.html?redirect=checkout';
       return;
     }
   } catch (err) {

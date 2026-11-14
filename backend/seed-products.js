@@ -2,193 +2,11 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
 const Product = require('./src/models/product');
+const { products } = require('./src/config/seedData');
 const dns = require('dns');
 
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-const products = [
-  {
-    name: 'Camiseta Oversized Hunter',
-    category: 'Camisetas',
-    price: 149.9,
-    description: 'Camiseta Oversized Hunter que combina conforto absoluto com estilo. Tecido de alta performance permite movimento livre durante treinos intensos e uso casual. Design amplo oferece liberdade total de movimento sem comprometer a qualidade. Perfeita para quem busca peça versátil que transita entre academia e rua com confiança.',
-    images: [
-      'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Frente.jpg?v=1784043294&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_8.jpg?v=1784315506&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_6.jpg?v=1784315508&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Costas.jpg?v=1784043294&width=832'
-    ],
-    countInStock: 25,
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      {
-        name: 'Azul Marinho',
-        hex: '#000080',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Frente.jpg?v=1784043294&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_8.jpg?v=1784315506&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Azul_Marinho_Oversized_07jul26_Fc_6.jpg?v=1784315508&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Costas.jpg?v=1784043294&width=832'
-        ]
-      },
-      {
-        name: 'Verde Musgo',
-        hex: '#4A5D23',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterVerdeMusgo-Frente.jpg?v=1784044429&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Verde_Musgo_Oversized_07jul26_Fc_7.jpg?v=1784315736&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Oversized_Hunter_Verde_Musgo_Oversized_07jul26_Fc_6.jpg?v=1784315736&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterVerdeMusgo-Costas.jpg?v=1784044429&width=832'
-        ]
-      }
-    ],
-    benefits: ['Conforto Absoluto', 'Alta Performance', 'Design Amplo', 'Versatilidade']
-  },
-  {
-    name: 'Camiseta Apex Dry Evolution',
-    category: 'Camisetas',
-    price: 149.9,
-    description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
-    images: [
-      'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
-      'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
-    ],
-    countInStock: 25,
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      {
-        name: 'Cinza',
-        hex: '#808080',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc_5.jpg?v=1775050205&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Cinza_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050205&width=832'
-        ]
-      },
-      {
-        name: 'Azul Marinho',
-        hex: '#000080',
-        images: [
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc.jpg?v=1775050157&width=832',
-          'https://usealphaco.com.br/cdn/shop/files/Camiseta_Apex_Dry_Evolution_Marinho_Sem_Costura_Apex_04abr26_Fc_1.jpg?v=1775050157&width=832'
-        ]
-      }
-    ],
-    benefits: ['Sem Costura (Seamless)', 'Tecnologia Dry', 'Modelagem Anatômica', 'Secagem Rápida']
-  },
-  {
-    name: 'Regata Canelada "Apex Cut"',
-    category: 'Regatas',
-    price: 99.9,
-    description: 'Ajuste anatômico que valoriza o shape. Tecido canelado premium de alta elasticidade, desenvolvido para máxima performance e conforto durante o treino.',
-    images: [
-      'https://images.unsplash.com/photo-1598971639058-9997c0d73d0c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1597452485669-2c7bb5fef90d?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 50,
-    badge: 'BEST SELLER',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Branco', hex: '#FFFFFF' },
-      { name: 'Cinza', hex: '#808080' }
-    ],
-    benefits: ['Tecido Canelado Premium', 'Alta Compressão', 'Secagem Ultra Rápida', 'Costuras Reforçadas']
-  },
-  {
-    name: 'Oversized T-shirt "Street Pump"',
-    category: 'Camisetas',
-    price: 149.9,
-    description: 'Modelagem boxy moderna com ombros caídos. Algodão premium de alta gramatura que mantém a estrutura mesmo após várias lavagens.',
-    images: [
-      'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1554568218-0f1715e72254?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 40,
-    badge: 'DROP',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Off White', hex: '#FAF9F6' }
-    ],
-    benefits: ['100% Algodão 200 GSM', 'Modelagem Boxy', 'Toque Macio', 'Estampa Minimalista']
-  },
-  {
-    name: 'Shorts "Velocity Mesh"',
-    category: 'Shorts',
-    price: 129.9,
-    description: 'Tecido mesh respirável com forro interno de compressão. Projetado para oferecer liberdade total de movimento e suporte.',
-    images: [
-      'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 35,
-    badge: 'NOVO',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Azul Navy', hex: '#000080' }
-    ],
-    benefits: ['Mesh Respirável', 'Forro de Compressão', 'Bolsos Laterais', 'Cós Ajustável']
-  },
-  {
-    name: 'Moletom "Heavy Bulk Core"',
-    category: 'Casacos',
-    price: 299.9,
-    description: 'Estrutura pesada (3F) e capuz estruturado. Perfeito para o pré e pós treino, oferecendo aquecimento e estilo impecáveis.',
-    images: [
-      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 20,
-    badge: 'DROP',
-    sizes: ['P', 'M', 'G', 'GG'],
-    colors: [
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Cinza Mescla', hex: '#BEBEBE' }
-    ],
-    benefits: ['Algodão 3 Cabos Heavy', 'Capuz Estruturado', 'Bolsos Canguru', 'Corte Premium']
-  },
-  {
-    name: 'Legging "CoreFlex"',
-    category: 'Feminino',
-    price: 179.9,
-    description: 'Cintura alta e zero transparência. Desenvolvida com tecnologia de alta performance para treinos intensos de agachamento.',
-    images: [
-      'https://images.unsplash.com/photo-1594737625785-c2d0b7d0e3a7?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 60,
-    badge: 'BEST SELLER',
-    sizes: ['P', 'M', 'G'],
-    colors: [
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Vinho', hex: '#722F37' }
-    ],
-    benefits: ['Zero Transparência', 'Cintura Alta Modeladora', 'Suporte Muscular', 'Bolso Invisível']
-  },
-  {
-    name: 'Cropped "Alpha Cut Women"',
-    category: 'Feminino',
-    price: 89.9,
-    description: 'Corte moderno que valoriza a silhueta. Tecido leve com tecnologia Dry que absorve o suor e mantém a temperatura ideal.',
-    images: [
-      'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?auto=format&fit=crop&w=800&q=80'
-    ],
-    countInStock: 45,
-    badge: 'NOVO',
-    sizes: ['P', 'M', 'G'],
-    colors: [
-      { name: 'Branco', hex: '#FFFFFF' },
-      { name: 'Preto', hex: '#000000' },
-      { name: 'Lilás', hex: '#C8A2C8' }
-    ],
-    benefits: ['Tecido Tecnologia Dry', 'Corte Alpha', 'Proteção UV', 'Antiodor']
-  },
-];
 
 const seedProducts = async () => {
   try {
@@ -196,17 +14,20 @@ const seedProducts = async () => {
     if (!mongoURI) throw new Error('MONGODB_URI not found in .env');
 
     console.log('Conectando ao MongoDB...');
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
 
-    await Product.deleteMany({});
-    console.log('Produtos antigos removidos.');
+    for (const p of products) {
+      await Product.findOneAndUpdate(
+        { name: p.name },
+        { $set: p },
+        { upsert: true, new: true }
+      );
+    }
+    console.log(`✅ ${products.length} produtos sincronizados com sucesso na base de dados!`);
 
-    await Product.insertMany(products);
-    console.log('✅ Base premium cadastrada com sucesso!');
-
-    process.exit();
+    process.exit(0);
   } catch (error) {
-    console.error('❌ Erro:', error.message);
+    console.error('❌ Erro no seed:', error.message);
     process.exit(1);
   }
 };

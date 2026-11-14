@@ -5,36 +5,36 @@ export function renderNav(activePage) {
     masculino: {
       columns: [
         { title: 'ROUPAS', links: [
-          { label: 'Regatas', href: '/products?category=Regatas' },
-          { label: 'Camisetas', href: '/products?category=Camisetas' },
-          { label: 'Shorts', href: '/products?category=Shorts' },
-          { label: 'Calças', href: '/products?category=Calças' },
-          { label: 'Moletons', href: '/products?category=Moletom' },
+          { label: 'Regatas', href: '/products?gender=masculino&category=Regatas' },
+          { label: 'Camisetas', href: '/products?gender=masculino&category=Camisetas' },
+          { label: 'Shorts', href: '/products?gender=masculino&category=Shorts' },
+          { label: 'Calças', href: '/products?gender=masculino&category=Calças' },
+          { label: 'Moletons', href: '/products?gender=masculino&category=Moletons' },
         ]},
         { title: 'COLEÇÕES', links: [
           { label: 'Heavy', href: '/category.html?id=Heavy' },
           { label: 'Performance', href: '/category.html?id=Performance' },
           { label: 'Casual', href: '/category.html?id=Casual' },
-          { label: 'Inverno', href: '/category.html?id=Moletom' },
+          { label: 'Inverno', href: '/products?gender=masculino&category=Moletons' },
         ]},
         { title: 'DESTAQUES', links: [
-          { label: 'Mais vendidos', href: '/products' },
-          { label: 'Promoções', href: '/products' },
-          { label: 'Lançamentos', href: '/products' },
-          { label: 'Novidades', href: '/products' },
+          { label: 'Mais vendidos', href: '/products?gender=masculino' },
+          { label: 'Promoções', href: '/products?gender=masculino' },
+          { label: 'Lançamentos', href: '/products?gender=masculino' },
+          { label: 'Novidades', href: '/products?gender=masculino' },
         ]},
       ],
       image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=80',
       viewAllLabel: 'Ver tudo em Masculino',
-      viewAllHref: '/products',
+      viewAllHref: '/products?gender=masculino',
     },
     feminino: {
       columns: [
         { title: 'ROUPAS', links: [
-          { label: 'Leggings', href: '/products?category=Leggings' },
-          { label: 'Tops', href: '/products?category=Tops' },
-          { label: 'Croppeds', href: '/products?category=Croppeds' },
-          { label: 'Shorts', href: '/products?category=Shorts' },
+          { label: 'Leggings', href: '/products?gender=feminino&category=Leggings' },
+          { label: 'Tops', href: '/products?gender=feminino&category=Tops' },
+          { label: 'Croppeds', href: '/products?gender=feminino&category=Croppeds' },
+          { label: 'Shorts', href: '/products?gender=feminino&category=Shorts' },
         ]},
         { title: 'COLEÇÕES', links: [
           { label: 'Alpha Cut', href: '/category.html?id=AlphaCut' },
@@ -42,14 +42,14 @@ export function renderNav(activePage) {
           { label: 'Performance', href: '/category.html?id=Performance' },
         ]},
         { title: 'DESTAQUES', links: [
-          { label: 'Mais vendidos', href: '/products' },
-          { label: 'Promoções', href: '/products' },
-          { label: 'Lançamentos', href: '/products' },
+          { label: 'Mais vendidos', href: '/products?gender=feminino' },
+          { label: 'Promoções', href: '/products?gender=feminino' },
+          { label: 'Lançamentos', href: '/products?gender=feminino' },
         ]},
       ],
       image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
       viewAllLabel: 'Ver tudo em Feminino',
-      viewAllHref: '/products',
+      viewAllHref: '/products?gender=feminino',
     },
     colecoes: {
       columns: [
@@ -131,10 +131,10 @@ export function renderNav(activePage) {
 
         <!-- Main Navigation (Desktop) -->
         <nav class="main-nav desktop-only">
-          <a class="nav-link" data-mega="masculino" href="/products">Masculino</a>
-          <a class="nav-link" data-mega="feminino" href="/products">Feminino</a>
+          <a class="nav-link" data-mega="masculino" href="/products?gender=masculino">Masculino</a>
+          <a class="nav-link" data-mega="feminino" href="/products?gender=feminino">Feminino</a>
           <a class="nav-link" data-mega="colecoes" href="/category">Coleções</a>
-          <a class="nav-link" data-mega="acessorios" href="/products">Acessórios</a>
+          <a class="nav-link" data-mega="acessorios" href="/products?category=Acessórios">Acessórios</a>
         </nav>
 
         <!-- Logo (Centered) -->
@@ -172,10 +172,10 @@ export function renderNav(activePage) {
         <button class="close-drawers icon-button"><i class="fas fa-times"></i></button>
       </div>
       <div class="drawer-body" style="justify-content: flex-start; align-items: stretch; padding-top: 32px;">
-        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Masculino</a>
-        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Feminino</a>
+        <a href="/products?gender=masculino" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Masculino</a>
+        <a href="/products?gender=feminino" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Feminino</a>
         <a href="/category" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Coleções</a>
-        <a href="/products" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Acessórios</a>
+        <a href="/products?category=Acessórios" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border);">Acessórios</a>
         <a href="/tracking" class="nav-link" style="font-size: 1.25rem; padding: 16px 0; border-bottom: 1px solid var(--color-border); color: #28a745;"><i class="fas fa-truck"></i> Rastrear Pedido</a>
         ${!token ? `
           <button id="mobile-login-toggle" class="button" style="margin-top: 32px; width: 100%;">ENTRAR / CRIAR CONTA</button>

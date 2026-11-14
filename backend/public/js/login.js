@@ -52,8 +52,11 @@ loginForm.addEventListener('submit', async (event) => {
     }
 
     localStorage.setItem('md-essential-admin-token', data.token);
+    const redirectParam = new URLSearchParams(window.location.search).get('redirect');
     if (data.role === 'admin') {
       window.location.href = '/admin';
+    } else if (redirectParam) {
+      window.location.href = `/${redirectParam.replace(/^\//, '')}`;
     } else {
       window.location.href = '/account';
     }

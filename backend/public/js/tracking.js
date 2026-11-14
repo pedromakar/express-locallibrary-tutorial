@@ -231,7 +231,7 @@ async function renderTrackingPage() {
           <form id="tracking-search-form" class="tracking-search-form" onsubmit="event.preventDefault();">
             <div class="tracking-input-group">
               <i class="fas fa-search search-icon"></i>
-              <input type="text" id="tracking-input" placeholder="Digite o código de rastreio (ex: MD123456789BR) ou número do pedido" value="${initialCode}" />
+              <input type="text" id="tracking-input" placeholder="Código de rastreio ou nº do pedido" aria-label="Código de rastreio ou número do pedido" value="${initialCode}" />
               <button type="submit" id="tracking-search-btn" class="button">RASTREAR</button>
             </div>
           </form>

@@ -58,8 +58,10 @@ registerForm.addEventListener('submit', async (event) => {
     }
 
     registerMessage.textContent = 'Cadastro realizado com sucesso! Redirecionando para login...';
+    const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+    const targetUrl = redirectParam ? `/login.html?redirect=${encodeURIComponent(redirectParam)}` : '/login';
     setTimeout(() => {
-      window.location.href = '/login';
+      window.location.href = targetUrl;
     }, 1200);
   } catch (error) {
     registerMessage.textContent = 'Erro ao conectar com o servidor.';

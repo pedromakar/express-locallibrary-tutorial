@@ -168,7 +168,7 @@ async function renderProduct() {
               <!-- Reference 1: Money Back & Security Guarantee -->
               <div class="product-guarantee-badge mobile-only">
                 <i class="fas fa-shield-alt" style="color: #28a745;"></i>
-                <span>Garantia de 30 Dias • Primeira Troca Grátis • 100% Original</span>
+                <span>Garantia de 30 Dias • 1ª Troca Grátis • 100% Original</span>
               </div>
             </div>
 
