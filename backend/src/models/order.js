@@ -31,7 +31,17 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'canceled'],
     default: 'pending',
   },
+  isPaid: {
+    type: Boolean,
+    default: false,
+  },
+  paidAt: {
+    type: Date,
+  },
   paymentMethod: { type: String, default: '' },
+  mercadopagoPreferenceId: { type: String, default: '' },
+  mercadopagoPaymentId: { type: String, default: '' },
+  mercadopagoStatus: { type: String, default: '' },
   shippingMethod: { type: String, default: '' },
   shippingPrice: { type: Number, default: 0 },
   shippingAddress: {

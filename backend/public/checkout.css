@@ -275,10 +275,13 @@
 /* Payment Methods */
 .payment-methods {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
-@media (max-width: 640px) {
+@media (max-width: 800px) {
+  .payment-methods { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 520px) {
   .payment-methods { grid-template-columns: repeat(2, 1fr); }
 }
 .payment-method {
@@ -329,6 +332,126 @@
 }
 .payment-method.selected span {
   color: var(--color-text);
+}
+.mp-tag-pill {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #009EE3;
+  background: rgba(0, 158, 227, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-top: -2px;
+}
+
+/* Mercado Pago Checkout Pro Box */
+.mercadopago-checkout-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  margin-top: 20px;
+  animation: fadeSlideIn 0.25s ease;
+}
+.mp-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.mp-box-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mp-badge-tag {
+  background: #009EE3;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mp-box-title-group h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+.mp-secure-flag {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.mp-secure-flag i {
+  color: var(--color-success);
+}
+.mp-box-desc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.mp-methods-pills {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .mp-methods-pills {
+    grid-template-columns: 1fr;
+  }
+}
+.mp-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.mp-pill i {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+.mp-pill div {
+  display: flex;
+  flex-direction: column;
+}
+.mp-pill strong {
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+.mp-pill small {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+.mp-box-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-left: 3px solid #009EE3;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+.mp-box-notice i {
+  color: #009EE3;
+  margin-top: 2px;
 }
 
 /* Card Form */

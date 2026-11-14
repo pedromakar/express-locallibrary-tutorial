@@ -21,6 +21,17 @@ router.get('/orders/track/:query', orderController.trackOrder);
 // POST /api/shipping/calculate
 router.post('/shipping/calculate', orderController.calculateShipping);
 
+// MERCADO PAGO CHECKOUT PRO
+// POST /api/checkout/mercadopago/create-preference
+router.post('/checkout/mercadopago/create-preference', auth, orderController.createMercadoPagoPreference);
+
+// POST /api/checkout/mercadopago/webhook (e alias /api/orders/webhook/mercadopago)
+router.post('/checkout/mercadopago/webhook', orderController.handleMercadoPagoWebhook);
+router.post('/orders/webhook/mercadopago', orderController.handleMercadoPagoWebhook);
+
+// GET /api/checkout/mercadopago/status/:orderId
+router.get('/checkout/mercadopago/status/:orderId', orderController.getMercadoPagoStatus);
+
 // WEBHOOK BOT DE WHATSAPP
 // POST /api/webhooks/whatsapp
 router.post('/webhooks/whatsapp', orderController.handleWhatsAppWebhook);

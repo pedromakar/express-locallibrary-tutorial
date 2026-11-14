@@ -11,14 +11,21 @@ if (!token) {
 // State management
 let userData = null;
 const urlParams = new URLSearchParams(window.location.search);
+const mpStatus = urlParams.get('status') || urlParams.get('collection_status');
+const mpOrderId = urlParams.get('order_id') || urlParams.get('external_reference');
 const initialTabParam = urlParams.get('tab') || (window.location.hash ? window.location.hash.replace('#', '') : '');
-let activeTab = ['perfil', 'enderecos', 'marketing', 'pedidos'].includes(initialTabParam) ? initialTabParam : 'perfil';
+let activeTab = ['perfil', 'enderecos', 'marketing', 'pedidos'].includes(initialTabParam)
+  ? initialTabParam
+  : (mpStatus ? 'pedidos' : 'perfil');
 let userOrders = [];
 
 // Fetch user orders history
 async function loadUserOrders() {
   if (!userData?._id) return;
   try {
+    if (mpOrderId) {
+      await fetch(`/api/checkout/mercadopago/status/${mpOrderId}`).catch(() => {});
+    }
     const response = await fetch(`/api/orders/${userData._id}`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -97,6 +104,25 @@ async function loadUserProfile() {
 // Main Dashboard Renderer
 function renderDashboard() {
   const activeChannels = countActiveMarketingChannels();
+  const mpNoticeBanner = mpStatus ? `
+    <div style="background: ${mpStatus === 'approved' ? 'rgba(40,167,69,0.08)' : 'rgba(255,193,7,0.1)'}; border: 1px solid ${mpStatus === 'approved' ? 'var(--color-success)' : '#f59e0b'}; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fas ${mpStatus === 'approved' ? 'fa-check-circle' : 'fa-clock'}" style="color: ${mpStatus === 'approved' ? 'var(--color-success)' : '#d97706'}; font-size: 1.2rem;"></i>
+        <div>
+          <strong style="color: var(--color-text); font-size: 0.88rem; display: block;">
+            ${mpStatus === 'approved' ? 'Pagamento Aprovado no Mercado Pago!' : 'Pagamento em Processamento'}
+          </strong>
+          <span style="font-size: 0.78rem; color: var(--color-text-muted);">
+            ${mpStatus === 'approved' 
+              ? 'Seu pedido foi registrado e confirmado. Já estamos separando suas peças para envio.'
+              : 'O Mercado Pago está processando a transação. O status do pedido será atualizado automaticamente.'}
+          </span>
+        </div>
+      </div>
+      <button onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.2rem; line-height: 1; color: var(--color-text-muted); cursor: pointer;" title="Fechar">&times;</button>
+    </div>
+  ` : '';
+
   root.innerHTML = `
     ${renderNav('account')}
     
@@ -149,6 +175,7 @@ function renderDashboard() {
 
         <!-- Main Workspace Area -->
         <section class="box" style="background: #ffffff; border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 32px;">
+          ${mpNoticeBanner}
           ${renderActiveTabContent(activeChannels)}
         </section>
 

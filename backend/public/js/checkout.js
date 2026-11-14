@@ -211,6 +211,14 @@ window.copyPixCode = function(code) {
    MAIN RENDER
 =========================== */
 async function renderCheckout() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const statusParam = urlParams.get('status') || urlParams.get('collection_status');
+  if (statusParam === 'failure' || statusParam === 'rejected') {
+    setTimeout(() => {
+      showToast('O pagamento não pôde ser concluído no Mercado Pago. Por favor, tente novamente ou escolha outra forma de pagamento.', 'error', 6000);
+    }, 400);
+  }
+
   if (!token) {
     alert('Você precisa estar logado para finalizar a compra.');
     window.location.href = '/login';
@@ -426,6 +434,12 @@ async function renderCheckout() {
               </div>
               <div class="checkout-card-body">
                 <div class="payment-methods" id="payment-methods">
+                  <label class="payment-method" data-method="mercadopago">
+                    <input type="radio" name="payment" value="mercadopago" />
+                    <div class="payment-icon"><i class="fas fa-shield-alt" style="color:#009EE3;"></i></div>
+                    <span>Mercado Pago</span>
+                    <span class="mp-tag-pill">Checkout Pro</span>
+                  </label>
                   <label class="payment-method" data-method="pix">
                     <input type="radio" name="payment" value="pix" />
                     <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
@@ -592,23 +606,31 @@ function setupCheckoutEvents(subtotal, shippingOptions, items, userData) {
       selectedPayment = label.dataset.method;
 
       const extraSection = document.getElementById('payment-extra-section');
-      if (selectedPayment === 'credit' || selectedPayment === 'debit') {
-        extraSection.innerHTML = renderCardForm();
-        applyMasks(); // re-apply masks for card inputs
-      } else if (selectedPayment === 'pix') {
-        const total = computeTotal(subtotal);
-        extraSection.innerHTML = renderPixSection(total);
-      } else if (selectedPayment === 'boleto') {
-        extraSection.innerHTML = `
-          <div class="boleto-section">
-            <div class="boleto-info">
-              <i class="fas fa-info-circle"></i>
-              <p>Após confirmar o pedido, você receberá o boleto por e-mail. O boleto vence em <strong>3 dias úteis</strong>. O prazo de entrega começa após a confirmação do pagamento.</p>
-            </div>
-          </div>
-        `;
+      const finalizeBtn = document.getElementById('finalize-order');
+
+      if (selectedPayment === 'mercadopago') {
+        extraSection.innerHTML = renderMercadoPagoSection();
+        if (finalizeBtn) finalizeBtn.innerHTML = '<i class="fas fa-lock"></i> PAGAR COM MERCADO PAGO';
       } else {
-        extraSection.innerHTML = '';
+        if (finalizeBtn) finalizeBtn.innerHTML = '<i class="fas fa-lock"></i> FINALIZAR PEDIDO';
+        if (selectedPayment === 'credit' || selectedPayment === 'debit') {
+          extraSection.innerHTML = renderCardForm();
+          applyMasks(); // re-apply masks for card inputs
+        } else if (selectedPayment === 'pix') {
+          const total = computeTotal(subtotal);
+          extraSection.innerHTML = renderPixSection(total);
+        } else if (selectedPayment === 'boleto') {
+          extraSection.innerHTML = `
+            <div class="boleto-section">
+              <div class="boleto-info">
+                <i class="fas fa-info-circle"></i>
+                <p>Após confirmar o pedido, você receberá o boleto por e-mail. O boleto vence em <strong>3 dias úteis</strong>. O prazo de entrega começa após a confirmação do pagamento.</p>
+              </div>
+            </div>
+          `;
+        } else {
+          extraSection.innerHTML = '';
+        }
       }
     });
   });
@@ -706,6 +728,60 @@ function setupCheckoutEvents(subtotal, shippingOptions, items, userData) {
 
   // Finalize order
   document.getElementById('finalize-order')?.addEventListener('click', () => finalizeOrder(subtotal, items, userData));
+}
+
+/* ===========================
+   MERCADO PAGO SECTION HTML
+=========================== */
+function renderMercadoPagoSection() {
+  return `
+    <div class="mercadopago-checkout-box">
+      <div class="mp-box-header">
+        <div class="mp-box-title-group">
+          <span class="mp-badge-tag"><i class="fas fa-shield-alt"></i> CHECKOUT PRO</span>
+          <h3>Pague com o Mercado Pago</h3>
+        </div>
+        <span class="mp-secure-flag"><i class="fas fa-lock"></i> Ambiente Criptografado</span>
+      </div>
+      <p class="mp-box-desc">
+        Ao clicar no botão abaixo, você será redirecionado para a plataforma do <strong>Mercado Pago</strong> para pagar com rapidez e proteção total ao comprador.
+      </p>
+      <div class="mp-methods-pills">
+        <div class="mp-pill">
+          <i class="fas fa-bolt" style="color:#00a650;"></i>
+          <div>
+            <strong>Pix Instantâneo</strong>
+            <small>Aprovação imediata</small>
+          </div>
+        </div>
+        <div class="mp-pill">
+          <i class="fas fa-credit-card" style="color:#009ee3;"></i>
+          <div>
+            <strong>Cartão de Crédito</strong>
+            <small>Em até 12x no cartão</small>
+          </div>
+        </div>
+        <div class="mp-pill">
+          <i class="fas fa-barcode"></i>
+          <div>
+            <strong>Boleto Bancário</strong>
+            <small>Vencimento em 3 dias</small>
+          </div>
+        </div>
+        <div class="mp-pill">
+          <i class="fas fa-wallet" style="color:#3483fa;"></i>
+          <div>
+            <strong>Saldo Mercado Pago</strong>
+            <small>Pague com sua conta MP</small>
+          </div>
+        </div>
+      </div>
+      <div class="mp-box-notice">
+        <i class="fas fa-info-circle"></i>
+        <span>Nenhum dado financeiro ou de cartão é coletado no nosso site. A transação ocorre 100% no Mercado Pago.</span>
+      </div>
+    </div>
+  `;
 }
 
 /* ===========================
@@ -913,6 +989,45 @@ async function finalizeOrder(subtotal, items, userData) {
     localStorage.removeItem(CART_KEY);
     syncCart();
 
+    // Se selecionou Mercado Pago Checkout Pro, redireciona o comprador
+    if (selectedPayment === 'mercadopago') {
+      let redirectUrl = data.preference?.init_point || data.preference?.sandbox_init_point;
+      
+      // Fallback: se não veio na resposta inicial, cria explicitamente a preferência
+      if (!redirectUrl && data.orderId) {
+        try {
+          const prefRes = await fetch('/api/checkout/mercadopago/create-preference', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              orderId: data.orderId,
+              payer: {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone
+              }
+            })
+          });
+          const prefData = await prefRes.json();
+          redirectUrl = prefData.init_point || prefData.sandbox_init_point;
+        } catch (err) {
+          console.error('Falha ao obter link de checkout do Mercado Pago:', err);
+        }
+      }
+
+      if (redirectUrl) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> REDIRECIONANDO AO MERCADO PAGO...';
+        showToast('Redirecionando para o ambiente seguro do Mercado Pago...', 'success');
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+        return;
+      }
+    }
+
     // Show success screen
     const totalPaid = document.getElementById('order-total')?.textContent || `R$ ${subtotal.toFixed(2)}`;
 
@@ -1008,7 +1123,13 @@ async function saveUserData(formData, userData) {
    HELPERS
 =========================== */
 function getPaymentName(method) {
-  return { pix: 'PIX', credit: 'Cartão de Crédito', debit: 'Cartão de Débito', boleto: 'Boleto Bancário' }[method] || method;
+  return {
+    mercadopago: 'Mercado Pago (Checkout Pro)',
+    pix: 'PIX',
+    credit: 'Cartão de Crédito',
+    debit: 'Cartão de Débito',
+    boleto: 'Boleto Bancário'
+  }[method] || method;
 }
 
 renderCheckout();

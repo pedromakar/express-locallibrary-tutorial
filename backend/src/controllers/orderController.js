@@ -5,6 +5,7 @@ const User = require('../models/user');
 const emailService = require('../services/emailService');
 const whatsappService = require('../services/whatsappService');
 const shippingService = require('../services/shippingService');
+const mercadoPagoService = require('../services/mercadoPagoService');
 
 // POST /api/orders
 exports.createOrder = async (req, res) => {
@@ -119,10 +120,33 @@ exports.createOrder = async (req, res) => {
       }
     }
 
+    // 5. Integração com Mercado Pago Checkout Pro (se selecionado)
+    let mpPreference = null;
+    if (req.body.paymentMethod === 'mercadopago') {
+      try {
+        mpPreference = await mercadoPagoService.createPreference({
+          order: createdOrder,
+          items: orderItems,
+          payer: {
+            name: shippingAddress?.recipientName || userRecord?.username,
+            email: customerEmail || userRecord?.email,
+            phone: customerPhone || shippingAddress?.phone || userRecord?.phone
+          }
+        });
+        if (mpPreference) {
+          createdOrder.mercadopagoPreferenceId = mpPreference.id;
+          await createdOrder.save();
+        }
+      } catch (mpErr) {
+        console.error('[MERCADO PAGO CREATE PREF WARN]:', mpErr.message);
+      }
+    }
+
     res.status(201).json({ 
       message: 'Pedido criado com sucesso', 
       orderId: createdOrder._id,
-      totalPrice: createdOrder.totalPrice
+      totalPrice: createdOrder.totalPrice,
+      preference: mpPreference
     });
   } catch (err) {
     res.status(500).json({ message: 'Erro ao criar pedido', error: err.message });
@@ -464,4 +488,208 @@ exports.handleWhatsAppWebhook = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+/**
+ * POST /api/checkout/mercadopago/create-preference
+ * Cria ou recupera preferência de pagamento Checkout Pro
+ */
+exports.createMercadoPagoPreference = async (req, res) => {
+  try {
+    const { orderId, payer } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ message: 'ID do pedido é obrigatório' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+
+    // Valida permissão do usuário
+    const userId = req.user?.id || req.user?._id;
+    if (order.user && order.user.toString() !== userId?.toString() && !req.user?.isAdmin) {
+      return res.status(403).json({ message: 'Acesso negado' });
+    }
+
+    const preference = await mercadoPagoService.createPreference({
+      order,
+      items: order.items,
+      payer: payer || {
+        name: order.shippingAddress?.recipientName,
+        email: order.customerEmail,
+        phone: order.customerPhone || order.shippingAddress?.phone
+      }
+    });
+
+    order.mercadopagoPreferenceId = preference.id;
+    order.paymentMethod = 'mercadopago';
+    await order.save();
+
+    res.json({
+      success: true,
+      orderId: order._id,
+      preferenceId: preference.id,
+      init_point: preference.init_point,
+      sandbox_init_point: preference.sandbox_init_point,
+      isSimulated: preference.isSimulated
+    });
+  } catch (err) {
+    console.error('[MERCADO PAGO PREFERENCE CONTROLLER ERR]:', err);
+    res.status(500).json({ message: 'Erro ao gerar preferência do Mercado Pago', error: err.message });
+  }
+};
+
+/**
+ * POST /api/checkout/mercadopago/webhook
+ * Recebe notificações Webhook do Mercado Pago (v1 e v2)
+ */
+exports.handleMercadoPagoWebhook = async (req, res) => {
+  // 1. Responde HTTP 200 imediatamente para o Mercado Pago não retentar em loop
+  res.status(200).send('OK');
+
+  try {
+    const body = req.body || {};
+    const query = req.query || {};
+    const headers = req.headers || {};
+
+    const type = body.type || body.action || query.type || query.topic;
+    const dataId = body.data?.id || body.id || query['data.id'] || query.id;
+
+    console.log(`[MERCADO PAGO WEBHOOK] Evento recebido: type=${type}, dataId=${dataId}`);
+
+    if (!dataId) {
+      return;
+    }
+
+    // 2. Validação da assinatura HMAC do Webhook (quando o secret estiver configurado)
+    const signatureHeader = headers['x-signature'];
+    const requestIdHeader = headers['x-request-id'];
+    const isSignatureValid = mercadoPagoService.verifyWebhookSignature({
+      signatureHeader,
+      requestIdHeader,
+      dataId: dataId.toString()
+    });
+
+    if (!isSignatureValid) {
+      console.warn(`[MERCADO PAGO WEBHOOK] Assinatura inválida descartada para dataId ${dataId}`);
+      return;
+    }
+
+    // 3. Processamento de eventos de pagamento
+    if (type === 'payment' || (typeof type === 'string' && type.startsWith('payment'))) {
+      const payment = await mercadoPagoService.getPayment(dataId);
+      if (!payment) {
+        console.warn(`[MERCADO PAGO WEBHOOK] Detalhes do pagamento ${dataId} não localizados`);
+        return;
+      }
+
+      console.log(`[MERCADO PAGO WEBHOOK] Pagamento ${payment.id}: status=${payment.status}, ref=${payment.external_reference}`);
+
+      const orderId = payment.external_reference;
+      let order = null;
+
+      if (orderId && orderId.match(/^[0-9a-fA-F]{24}$/)) {
+        order = await Order.findById(orderId);
+      }
+
+      if (!order) {
+        order = await Order.findOne({
+          $or: [
+            { mercadopagoPreferenceId: payment.preference_id },
+            { mercadopagoPaymentId: payment.id?.toString() }
+          ]
+        });
+      }
+
+      if (!order) {
+        console.warn(`[MERCADO PAGO WEBHOOK] Nenhum pedido associado ao pagamento ${payment.id} (ref: ${orderId})`);
+        return;
+      }
+
+      // Atualiza dados do pagamento
+      order.mercadopagoPaymentId = payment.id?.toString();
+      order.mercadopagoStatus = payment.status;
+
+      if (payment.status === 'approved') {
+        const wasAlreadyPaid = order.status === 'paid' || order.isPaid;
+        order.status = 'paid';
+        order.isPaid = true;
+        order.paidAt = new Date(payment.date_approved || Date.now());
+
+        if (!wasAlreadyPaid) {
+          order.trackingEvents.push({
+            status: 'PAGAMENTO_APROVADO',
+            description: `Pagamento aprovado via Mercado Pago Checkout Pro (${payment.payment_method_id?.toUpperCase() || 'Cartão/Pix'}).`,
+            location: 'Mercado Pago Gateway',
+            date: new Date()
+          });
+
+          // Notificação Admin
+          Notification.create({
+            type: 'payment_confirmed',
+            title: 'Pagamento Mercado Pago aprovado',
+            message: `Pedido #${order._id.toString().slice(-6).toUpperCase()} pago com sucesso (R$ ${order.totalPrice.toFixed(2)}).`,
+            relatedId: order._id.toString()
+          }).catch(() => {});
+
+          // Disparos automáticos
+          let userRecord = null;
+          if (order.user) {
+            userRecord = await User.findById(order.user);
+          }
+          emailService.sendOrderConfirmationEmail({
+            order,
+            user: userRecord || { username: order.shippingAddress?.recipientName || 'Cliente', email: order.customerEmail }
+          }).catch(err => console.error('[EMAIL NOTIFY ERR]:', err.message));
+
+          whatsappService.notifyOrderCreated(order)
+            .catch(err => console.error('[WHATSAPP NOTIFY ERR]:', err.message));
+        }
+      } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
+        order.status = 'canceled';
+        order.trackingEvents.push({
+          status: 'PAGAMENTO_RECUSADO',
+          description: `Pagamento ${payment.status === 'rejected' ? 'recusado' : 'cancelado'} no Mercado Pago (${payment.status_detail || ''}).`,
+          location: 'Mercado Pago Gateway',
+          date: new Date()
+        });
+      }
+
+      await order.save();
+      console.log(`[MERCADO PAGO WEBHOOK] Pedido #${order._id.toString().slice(-6).toUpperCase()} atualizado para status: ${order.status}`);
+    }
+  } catch (err) {
+    console.error('[MERCADO PAGO WEBHOOK HANDLER ERR]:', err);
+  }
+};
+
+/**
+ * GET /api/checkout/mercadopago/status/:orderId
+ * Retorna status verificado do pagamento no Mercado Pago
+ */
+exports.getMercadoPagoStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Pedido não encontrado' });
+    }
+
+    res.json({
+      orderId: order._id,
+      shortId: order._id.toString().slice(-6).toUpperCase(),
+      status: order.status,
+      isPaid: Boolean(order.isPaid || order.status === 'paid'),
+      paidAt: order.paidAt || null,
+      paymentMethod: order.paymentMethod,
+      mercadopagoStatus: order.mercadopagoStatus || null,
+      mercadopagoPaymentId: order.mercadopagoPaymentId || null,
+      totalPrice: order.totalPrice
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao verificar status do pagamento', error: err.message });
+  }
+};
+
 
