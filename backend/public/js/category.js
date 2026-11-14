@@ -31,7 +31,7 @@ async function renderCategoryPage() {
           </div>
         </section>
       </main>
-      ${renderFooter()}
+      ${renderFooter('category')}
     `;
   } else {
     let url = `/api/products?category=${encodeURIComponent(categoryId || '')}`;
@@ -50,7 +50,7 @@ async function renderCategoryPage() {
           </div>
         </section>
       </main>
-      ${renderFooter()}
+      ${renderFooter('category')}
     `;
   }
 

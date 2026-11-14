@@ -250,7 +250,7 @@ function render(products, categories, settings) {
         </div>
       </section>
     </main>
-    ${renderFooter()}
+    ${renderFooter('home')}
   `;
 
   initDrawerEvents();

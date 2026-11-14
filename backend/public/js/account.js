@@ -65,7 +65,7 @@ function renderSkeleton() {
         </section>
       </div>
     </main>
-    ${renderFooter()}
+    ${renderFooter('account')}
   `;
 }
 
@@ -155,7 +155,7 @@ function renderDashboard() {
       </div>
     </main>
 
-    ${renderFooter()}
+    ${renderFooter('account')}
   `;
 
   // Init scripts, modules and actions
@@ -903,8 +903,8 @@ function renderOrdersTabContent() {
           </div>
         ` : `
           <!-- PIX View (Default / PIX) -->
-          <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
-            <div style="background:#fff;border:2px solid var(--color-border);border-radius:8px;padding:10px;display:inline-block;box-shadow:var(--shadow-sm);">
+          <div class="order-pix-row" style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+            <div class="order-pix-qr" style="background:#fff;border:2px solid var(--color-border);border-radius:8px;padding:10px;display:inline-block;box-shadow:var(--shadow-sm);">
               <svg width="110" height="110" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
                 <rect width="160" height="160" fill="white"/>
                 <rect x="10" y="10" width="50" height="50" fill="none" stroke="black" stroke-width="4"/>
@@ -932,7 +932,7 @@ function renderOrdersTabContent() {
                 <rect x="68" y="132" width="8" height="8" fill="black"/>
               </svg>
             </div>
-            <div style="flex:1;min-width:220px;">
+            <div class="order-pix-content" style="flex:1;min-width:200px;">
               <div style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
                 <i class="fas fa-qrcode"></i> Código PIX Copia e Cola:
               </div>
@@ -966,30 +966,30 @@ function renderOrdersTabContent() {
         const isFirst = index === 0; // Auto-expand most recent order
 
         return `
-        <div style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: #ffffff; box-shadow: var(--shadow-sm);">
+        <div class="order-card-wrapper" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; background-color: #ffffff; box-shadow: var(--shadow-sm); margin-bottom: 20px;">
           
           <!-- Order Header (clickable to toggle) -->
-          <div onclick="toggleOrderDetails('${order._id}')" style="background-color: var(--color-bg); padding: 18px 20px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; cursor: pointer; user-select: none;">
-            <div>
-              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">NÚMERO DO PEDIDO</span>
-              <strong style="font-size: 1rem; font-family: var(--font-display); color: var(--color-text);">#${order._id.slice(-6).toUpperCase()}</strong>
+          <div onclick="toggleOrderDetails('${order._id}')" class="order-card-header-bar">
+            <div class="order-header-box order-num-box">
+              <span class="order-header-label">NÚMERO DO PEDIDO</span>
+              <strong class="order-header-val">#${order._id.slice(-6).toUpperCase()}</strong>
             </div>
-            <div>
-              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">DATA</span>
-              <strong style="font-size: 0.875rem; color: var(--color-text);">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</strong>
-            </div>
-            <div>
-              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; text-transform: uppercase; letter-spacing: 0.05em;">VALOR TOTAL</span>
-              <strong style="font-size: 1rem; color: var(--color-text);">R$ ${order.totalPrice.toFixed(2)}</strong>
-            </div>
-            <div>
-              <span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em;">STATUS</span>
-              <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 12px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; background: ${badgeColor}18; color: ${badgeColor}; border: 1px solid ${badgeColor}40;">
+            <div class="order-header-box order-status-box">
+              <span class="order-header-label">STATUS</span>
+              <span class="order-status-badge" style="background: ${badgeColor}18; color: ${badgeColor}; border: 1px solid ${badgeColor}40;">
                 <i class="fas ${STATUS_ICONS[order.status] || 'fa-circle'}"></i>
                 ${STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
-            <button class="button button-small" style="background: #fff; border: 1px solid var(--color-border); color: var(--color-text); font-size: 0.75rem; padding: 8px 14px; display: flex; align-items: center; gap: 6px;" id="toggle-${order._id}">
+            <div class="order-header-box order-date-box">
+              <span class="order-header-label">DATA</span>
+              <strong class="order-header-val-sub">${new Date(order.createdAt).toLocaleDateString('pt-BR')}</strong>
+            </div>
+            <div class="order-header-box order-total-box">
+              <span class="order-header-label">VALOR TOTAL</span>
+              <strong class="order-header-val">R$ ${order.totalPrice.toFixed(2)}</strong>
+            </div>
+            <button class="button button-small order-toggle-btn" id="toggle-${order._id}">
               <i class="fas ${isFirst ? 'fa-chevron-up' : 'fa-chevron-down'}" id="icon-${order._id}"></i>
               <span id="label-${order._id}">${isFirst ? 'Ocultar' : 'Ver Detalhes'}</span>
             </button>
@@ -1007,14 +1007,14 @@ function renderOrdersTabContent() {
                 <i class="fas ${location.icon}" style="color: var(--color-primary);"></i>
                 Rastreamento e Localização
               </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.85rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.85rem;">
                 <div>
                   <span style="font-size: 0.7rem; color: var(--color-text-muted); display: block; font-weight: 600;">LOCALIZAÇÃO ATUAL:</span>
-                  <strong style="color: var(--color-text);"><i class="fas fa-map-marker-alt" style="color:var(--color-primary);margin-right:4px;"></i>${location.location}</strong>
+                  <strong style="color: var(--color-text); word-break: break-word;"><i class="fas fa-map-marker-alt" style="color:var(--color-primary);margin-right:4px;"></i>${location.location}</strong>
                 </div>
                 <div>
                   <span style="font-size: 0.7rem; color: var(--color-text-muted); display: block; font-weight: 600;">STATUS DE ENVIO:</span>
-                  <span style="color: var(--color-text); font-weight: 600;">${location.desc}</span>
+                  <span style="color: var(--color-text); font-weight: 600; word-break: break-word;">${location.desc}</span>
                 </div>
               </div>
 
@@ -1038,24 +1038,24 @@ function renderOrdersTabContent() {
               </div>
               <div style="display: flex; flex-direction: column; gap: 10px;">
                 ${order.items.map(item => `
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; padding: 14px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border); flex-wrap: wrap; gap: 12px;">
-                    <div>
-                      <strong style="color: var(--color-text); font-size: 0.95rem;">
+                  <div class="order-item-row">
+                    <div class="order-item-main-info">
+                      <strong class="order-item-title">
                         <a href="/product.html?id=${item.productId}" style="color: inherit; text-decoration: none;" title="Ver produto">${item.name}</a>
                       </strong>
-                      <div style="display:flex;gap:6px;margin:6px 0;">
-                        ${item.size ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">TAM: ${item.size}</span>` : ''}
-                        ${item.color ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--color-text-muted); background: #fff; border: 1px solid var(--color-border); padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">COR: ${item.color}</span>` : ''}
+                      <div class="order-item-variants">
+                        ${item.size ? `<span class="variant-tag">TAM: ${item.size}</span>` : ''}
+                        ${item.color ? `<span class="variant-tag">COR: ${item.color}</span>` : ''}
                       </div>
                       ${(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered') ? `
-                        <a href="/product.html?id=${item.productId}#reviews" class="button button-small" style="background: #28a745; color: #fff; border: none; font-size: 0.75rem; padding: 6px 12px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                        <a href="/product.html?id=${item.productId}#reviews" class="button-review-item">
                           <i class="fas fa-star" style="color: #ffc107;"></i> AVALIAR PRODUTO
                         </a>
                       ` : ''}
                     </div>
-                    <div style="text-align: right;">
-                      <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">${item.quantity}x R$ ${item.price.toFixed(2)}</span>
-                      <strong style="color: var(--color-text); font-size: 0.95rem;">R$ ${(item.quantity * item.price).toFixed(2)}</strong>
+                    <div class="order-item-pricing">
+                      <span class="order-item-qty-price">${item.quantity}x R$ ${item.price.toFixed(2)}</span>
+                      <strong class="order-item-total-price">R$ ${(item.quantity * item.price).toFixed(2)}</strong>
                     </div>
                   </div>
                 `).join('')}

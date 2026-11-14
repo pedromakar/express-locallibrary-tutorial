@@ -252,7 +252,7 @@ async function renderCheckout() {
           <a class="button" href="/products" style="margin-top: 24px; display: inline-block;">Ver Produtos</a>
         </section>
       </main>
-      ${renderFooter()}
+      ${renderFooter('checkout')}
     `;
     initDrawerEvents();
     return;
@@ -527,7 +527,7 @@ async function renderCheckout() {
         </div>
       </section>
     </main>
-    ${renderFooter()}
+    ${renderFooter('checkout')}
   `;
 
   initDrawerEvents();

@@ -318,6 +318,11 @@ export function updateCartBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'block' : 'none';
   }
+  const mobileBadge = document.getElementById('mobile-bottom-badge');
+  if (mobileBadge) {
+    mobileBadge.textContent = count;
+    mobileBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
 }
 
 async function renderDrawerItems() {
@@ -1077,13 +1082,40 @@ export function renderCategoryCard(category) {
   `;
 }
 
-export function renderFooter() {
+export function renderFooter(activePage = '') {
   return `
     <footer class="app-footer">
       <div class="container-custom">
         <p>&copy; ${new Date().getFullYear()} MD Essential. Todos os direitos reservados.</p>
       </div>
     </footer>
+
+    <!-- Mobile Bottom Navigation Bar (Reference 2) -->
+    <nav class="mobile-bottom-bar mobile-only" aria-label="Navegação mobile">
+      <a href="/" class="mobile-nav-tab ${activePage === 'home' ? 'active' : ''}">
+        <i class="fas fa-home"></i>
+        <span>Início</span>
+      </a>
+      <a href="/products" class="mobile-nav-tab ${activePage === 'products' ? 'active' : ''}">
+        <i class="fas fa-th-large"></i>
+        <span>Produtos</span>
+      </a>
+      <a href="/cart" class="mobile-nav-tab ${activePage === 'cart' ? 'active' : ''}">
+        <div class="mobile-tab-icon-wrap">
+          <i class="fas fa-shopping-bag"></i>
+          <span class="mobile-bottom-badge" id="mobile-bottom-badge" style="display: none;">0</span>
+        </div>
+        <span>Carrinho</span>
+      </a>
+      <a href="/tracking" class="mobile-nav-tab ${activePage === 'tracking' ? 'active' : ''}">
+        <i class="fas fa-truck"></i>
+        <span>Rastreio</span>
+      </a>
+      <a href="/account" class="mobile-nav-tab ${activePage === 'account' ? 'active' : ''}">
+        <i class="fas fa-user"></i>
+        <span>Conta</span>
+      </a>
+    </nav>
   `;
 }
 

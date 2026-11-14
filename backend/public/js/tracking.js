@@ -248,7 +248,7 @@ async function renderTrackingPage() {
         <div id="tracking-result-container"></div>
       </section>
     </main>
-    ${renderFooter()}
+    ${renderFooter('tracking')}
   `;
 
   initDrawerEvents();

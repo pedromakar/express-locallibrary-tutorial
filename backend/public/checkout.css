@@ -1047,3 +1047,77 @@
 .timeline-step.active .timeline-step-label {
   color: var(--color-text);
 }
+
+
+/* ==========================================================================
+   EXCLUSIVE MOBILE CHECKOUT OVERHAUL (REFERENCE 2, SCREEN 3)
+   PROTECTED UNDER RULE 1: APPLIES STRICTLY TO SCREENS <= 768px.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .checkout-container {
+    padding: 14px 10px !important;
+  }
+  .checkout-layout {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+  .checkout-step {
+    padding: 8px !important;
+  }
+  .checkout-step-number {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.75rem !important;
+  }
+  .checkout-step-label {
+    font-size: 0.68rem !important;
+  }
+  .checkout-card {
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+  .payment-methods {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .payment-method {
+    padding: 12px 10px !important;
+    border-radius: 10px !important;
+    font-size: 0.82rem !important;
+  }
+  .form-control, .checkout-input {
+    height: 46px !important;
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    border-radius: 10px !important;
+  }
+  .success-detail-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid var(--color-border) !important;
+  }
+  .success-detail-row span {
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+  .success-detail-row strong {
+    font-size: 0.88rem !important;
+    word-break: break-word !important;
+  }
+  .success-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .success-actions .button {
+    width: 100% !important;
+  }
+  #ck-submit-btn {
+    min-height: 52px !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    border-radius: 12px !important;
+    letter-spacing: 0.04em !important;
+  }
+}

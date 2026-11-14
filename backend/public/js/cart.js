@@ -11,7 +11,7 @@ root.innerHTML = `
       <div id="cart-content"></div>
     </section>
   </main>
-  ${renderFooter()}
+  ${renderFooter('cart')}
 `;
 
 initDrawerEvents();

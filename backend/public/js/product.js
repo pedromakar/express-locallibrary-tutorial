@@ -17,7 +17,7 @@ async function renderProduct() {
     root.innerHTML = `
       ${renderNav('products')}
       <main class="content"><section class="box"><h1>Produto não encontrado</h1></section></main>
-      ${renderFooter()}
+      ${renderFooter('products')}
     `;
     return;
   }
@@ -50,9 +50,16 @@ async function renderProduct() {
               <img id="main-product-image" src="${product.images[0]}" alt="${product.name}" />
               ${product.badge ? `<span class="badge premium">${product.badge}</span>` : ''}
             </div>
+            ${product.images.length > 1 ? `
+              <div class="mobile-gallery-dots mobile-only" id="mobile-gallery-dots">
+                ${product.images.map((_, idx) => `
+                  <button type="button" class="gallery-dot ${idx === 0 ? 'active' : ''}" data-idx="${idx}" aria-label="Imagem ${idx + 1}"></button>
+                `).join('')}
+              </div>
+            ` : ''}
             <div class="thumbnail-grid">
               ${product.images.map((img, idx) => `
-                <div class="thumb-item ${idx === 0 ? 'active' : ''}" data-src="${img}">
+                <div class="thumb-item ${idx === 0 ? 'active' : ''}" data-src="${img}" data-idx="${idx}">
                   <img src="${img}" alt="Thumbnail ${idx + 1}" />
                 </div>
               `).join('')}
@@ -68,6 +75,14 @@ async function renderProduct() {
               <span class="stars">${'★'.repeat(Math.round(product.rating || 5))}${'☆'.repeat(5 - Math.round(product.rating || 5))}</span>
               <span class="rating-value">${(product.rating || 5).toFixed(1)}</span>
               <a href="#reviews-section" class="rating-count">(${product.numReviews || (product.reviews ? product.reviews.length : 0)} avaliações)</a>
+            </div>
+
+            <!-- Feature Highlight Tags (Reference 1) -->
+            <div class="product-feature-tags mobile-only">
+              <span class="p-feature-tag"><i class="fas fa-feather-alt"></i> Tecido Premium</span>
+              <span class="p-feature-tag"><i class="fas fa-shield-alt"></i> Não Deforma</span>
+              <span class="p-feature-tag"><i class="fas fa-bolt"></i> Respirável</span>
+              <span class="p-feature-tag"><i class="fas fa-truck-fast"></i> Envio Expresso</span>
             </div>
             <p class="stock-status" style="font-size: 0.85rem; font-weight: 700; color: ${product.countInStock > 0 ? '#22c55e' : '#ef4444'}; margin-top: -8px; margin-bottom: 16px;">
               ${product.countInStock > 0 ? `<i class="fas fa-check"></i> Disponível em estoque (${product.countInStock} unidades)` : '<i class="fas fa-times-circle"></i> Esgotado'}
@@ -148,6 +163,12 @@ async function renderProduct() {
               <div class="easy-return-banner">
                 <i class="fas fa-box-open"></i>
                 <span>Primeira troca <strong>gratuita</strong> e sem burocracia. Troque Fácil MD!</span>
+              </div>
+
+              <!-- Reference 1: Money Back & Security Guarantee -->
+              <div class="product-guarantee-badge mobile-only">
+                <i class="fas fa-shield-alt" style="color: #28a745;"></i>
+                <span>Garantia de 30 Dias • Primeira Troca Grátis • 100% Original</span>
               </div>
             </div>
 
@@ -283,9 +304,9 @@ async function renderProduct() {
             ${(product.reviews && product.reviews.length > 0) ? product.reviews.map(r => `
               <div class="review-card">
                 <div class="review-card-header">
-                  <div>
+                  <div class="review-author-wrap">
                     <span class="review-author">${r.name}</span>
-                    <span style="font-size: 0.75rem; color: #22c55e; margin-left: 8px; font-weight: 600;"><i class="fas fa-check-circle"></i> Compra Verificada</span>
+                    <span class="badge-verified-purchase-inline"><i class="fas fa-check-circle"></i> Compra Verificada</span>
                   </div>
                   <span class="review-date">${new Date(r.createdAt || Date.now()).toLocaleDateString('pt-BR')}</span>
                 </div>
@@ -339,7 +360,7 @@ async function renderProduct() {
         </div>
       </div>
     </main>
-    ${renderFooter()}
+    ${renderFooter('products')}
   `;
 
   setupEventListeners(product, canReviewData);
@@ -430,12 +451,30 @@ function setupEventListeners(product, canReviewData = {}) {
     }
   });
 
-  // Gallery Logic
-  document.querySelectorAll('.thumb-item').forEach(thumb => {
+  // Gallery Logic (Thumbnails + Mobile Dots)
+  function syncGallery(idx, src) {
+    document.querySelector('.thumb-item.active')?.classList.remove('active');
+    document.querySelector('.gallery-dot.active')?.classList.remove('active');
+
+    const activeThumb = document.querySelectorAll('.thumb-item')[idx];
+    const activeDot = document.querySelectorAll('.gallery-dot')[idx];
+    if (activeThumb) activeThumb.classList.add('active');
+    if (activeDot) activeDot.classList.add('active');
+
+    const mainImg = document.getElementById('main-product-image');
+    if (mainImg && src) mainImg.src = src;
+  }
+
+  document.querySelectorAll('.thumb-item').forEach((thumb, idx) => {
     thumb.addEventListener('click', () => {
-      document.querySelector('.thumb-item.active')?.classList.remove('active');
-      thumb.classList.add('active');
-      document.getElementById('main-product-image').src = thumb.dataset.src;
+      syncGallery(idx, thumb.dataset.src);
+    });
+  });
+
+  document.querySelectorAll('.gallery-dot').forEach((dot, idx) => {
+    dot.addEventListener('click', () => {
+      const targetThumb = document.querySelectorAll('.thumb-item')[idx];
+      syncGallery(idx, targetThumb?.dataset.src);
     });
   });
 
