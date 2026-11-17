@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema({
   collectionName: { type: String, trim: true },
   price: { type: Number, required: true, default: 0 },
   countInStock: { type: Number, default: 0 },
+  priority: { type: Number, default: 0, index: true },
   badge: { type: String, trim: true },
   images: [{ type: String }],
   sizes: [{ type: String }], // e.g., ['P', 'M', 'G', 'GG']

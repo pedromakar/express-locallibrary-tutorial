@@ -6,6 +6,7 @@ const products = [
     gender: 'masculino',
     category: 'Camisetas',
     price: 159.9,
+    priority: 100,
     description: 'A icônica Camiseta Oversized MD Street combina a estética streetwear contemporânea com conforto e atitude. Confeccionada em algodão premium 100% de alta gramatura com toque peletizado macio e modelagem boxy com ombros caídos. Apresenta o logo minimalista MD estampado no centro do peito e, nas costas, a imponente arte em grafite "MD Essential" acompanhada pelo manifesto oficial de autenticidade e disciplina da marca.',
     images: [
       '/images/products/md-oversized-street-model-front.jpg',
@@ -55,6 +56,7 @@ const products = [
     gender: 'masculino',
     category: 'Camisetas',
     price: 139.9,
+    priority: 95,
     description: 'Desenvolvida para atletas que buscam performance máxima e mobilidade irrestrita. Fabricada em poliamida tecnológica ultra leve com elastano, proporcionando conforto térmico com toque gelado, elasticidade multidirecional e secagem ultra rápida (QuickDry). O corte com mangas raglan valoriza a definição dos ombros e peitoral, eliminando o atrito das costuras nas articulações durante os treinos mais intensos. Logo MD minimalista no centro do peito.',
     images: [
       '/images/products/md-raglan-poliamida-black.jpg'
@@ -98,6 +100,7 @@ const products = [
     gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
+    priority: 90,
     description: 'Camiseta Oversized Hunter que combina conforto absoluto com estilo. Tecido de alta performance permite movimento livre durante treinos intensos e uso casual. Design amplo oferece liberdade total de movimento sem comprometer a qualidade.',
     images: [
       'https://usealphaco.com.br/cdn/shop/files/CamisetaOversizedHunterAzulMarinho-Frente.jpg?v=1784043294&width=832',
@@ -153,6 +156,7 @@ const products = [
     gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
+    priority: 85,
     description: 'Camiseta premium de alta performance com tecnologia sem costura e secagem ultra-rápida. Design anatômico para treinos de alta intensidade.',
     images: [
       'https://usealphaco.com.br/cdn/shop/files/CamisetaApexDryEvolutionCinza.jpg?v=1775050205&width=832',
@@ -200,6 +204,7 @@ const products = [
     gender: 'masculino',
     category: 'Regatas',
     price: 99.9,
+    priority: 40,
     description: 'Ajuste anatômico que valoriza o shape. Tecido canelado premium de alta elasticidade, desenvolvido para máxima performance e conforto durante o treino.',
     images: [
       'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=800&q=80',
@@ -220,6 +225,7 @@ const products = [
     gender: 'masculino',
     category: 'Camisetas',
     price: 149.9,
+    priority: 35,
     description: 'Modelagem boxy moderna com ombros caídos. Algodão premium de alta gramatura que mantém a estrutura mesmo após várias lavagens.',
     images: [
       'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=800&q=80',
@@ -239,6 +245,7 @@ const products = [
     gender: 'masculino',
     category: 'Shorts',
     price: 129.9,
+    priority: 30,
     description: 'Tecido mesh respirável com forro interno de compressão. Projetado para oferecer liberdade total de movimento e suporte.',
     images: [
       'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=800&q=80',
@@ -258,6 +265,7 @@ const products = [
     gender: 'masculino',
     category: 'Moletons',
     price: 299.9,
+    priority: 25,
     description: 'Estrutura pesada (3F) e capuz estruturado. Perfeito para o pré e pós treino, oferecendo aquecimento e estilo impecáveis.',
     images: [
       'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80',
@@ -277,6 +285,7 @@ const products = [
     gender: 'masculino',
     category: 'Calças',
     price: 239.9,
+    priority: 20,
     description: 'Calça Jogger Tech Fleece desenvolvida para conforto térmico e mobilidade extrema. Corte tapered moderno que afunila nas pernas, cós elástico com cordão de ajuste premium e bolsos laterais com zíper selado.',
     images: [
       'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?auto=format&fit=crop&w=800&q=80',
@@ -296,6 +305,7 @@ const products = [
     gender: 'feminino',
     category: 'Leggings',
     price: 179.9,
+    priority: 40,
     description: 'Cintura alta e zero transparência. Desenvolvida com tecnologia de alta performance para treinos intensos de agachamento.',
     images: [
       'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
@@ -315,6 +325,7 @@ const products = [
     gender: 'feminino',
     category: 'Croppeds',
     price: 89.9,
+    priority: 35,
     description: 'Corte moderno que valoriza a silhueta. Tecido leve com tecnologia Dry que absorve o suor e mantém a temperatura ideal.',
     images: [
       'https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=800&q=80',
@@ -335,6 +346,7 @@ const products = [
     gender: 'feminino',
     category: 'Tops',
     price: 109.9,
+    priority: 30,
     description: 'Top esportivo de alta sustentação com tecnologia seamless sem costura. Alças duplas reforçadas e bojo removível para máximo conforto durante treinos de alta intensidade.',
     images: [
       'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
@@ -354,6 +366,7 @@ const products = [
     gender: 'feminino',
     category: 'Shorts',
     price: 119.9,
+    priority: 25,
     description: 'Shorts estilo biker com cintura alta modeladora, cós duplo e tecido de poliamida com elastano de alta densidade sem transparência.',
     images: [
       'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=800&q=80',

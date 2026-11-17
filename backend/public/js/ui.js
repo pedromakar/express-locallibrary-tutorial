@@ -357,7 +357,7 @@ async function renderDrawerItems() {
     return `
       <div class="drawer-cart-item">
         <a href="${productUrl}" class="drawer-cart-img-link" title="Ver detalhes de ${product.name}">
-          <img src="${product.image || product.images[0]}" alt="${product.name}" style="border-radius: var(--radius-sm); transition: transform 0.2s ease;" />
+          <img src="${getPrimaryProductImage(product)}" alt="${product.name}" style="border-radius: var(--radius-sm); transition: transform 0.2s ease;" />
         </a>
         <div style="flex: 1;">
           <div class="d-flex justify-content-between align-items-start">
@@ -391,7 +391,7 @@ async function renderDrawerItems() {
   if (upsellProduct && !cartKeys.some(key => cart[key].productId === upsellProduct._id)) {
     container.innerHTML += `
       <div class="cart-upsell-box">
-        <img src="${upsellProduct.image || (upsellProduct.images && upsellProduct.images[0]) || ''}" alt="${upsellProduct.name}" class="cart-upsell-img" />
+        <img src="${getPrimaryProductImage(upsellProduct)}" alt="${upsellProduct.name}" class="cart-upsell-img" />
         <div class="cart-upsell-info">
           <div class="cart-upsell-title" style="font-size: 0.75rem;">Sugestão: ${upsellProduct.name}</div>
           <div class="cart-upsell-price">R$ ${upsellProduct.price.toFixed(2)}</div>
@@ -975,11 +975,23 @@ export function initDrawerEvents() {
   });
 }
 
+export function getPrimaryProductImage(product) {
+  if (!product) return '';
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    const regImg = product.images.find(img => typeof img === 'string' && (img.startsWith('/images/products') || img.includes('md-oversized') || img.includes('md-raglan')));
+    if (regImg) return regImg;
+    const brandImg = product.images.find(img => typeof img === 'string' && (img.includes('usealphaco') || img.includes('/uploads/')));
+    if (brandImg) return brandImg;
+    return product.images[0];
+  }
+  return product.image || '';
+}
+
 export function renderProductCard(product) {
   const productId = product._id || product.id;
   const stock = product.countInStock || 0;
   const isKit = product.category && /kits/i.test(product.category);
-  const image = product.image || (product.images && product.images.length ? product.images[0] : '');
+  const image = getPrimaryProductImage(product);
 
   // Calculate original price for kits to show simulated discount
   const originalPriceHtml = isKit 

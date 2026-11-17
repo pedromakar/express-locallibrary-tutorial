@@ -37,12 +37,61 @@ function normalizeCategoryRegex(category) {
   return new RegExp(`^${clean}s?$`, 'i');
 }
 
-// Fallback static data synchronized with official seedCatalog
-const fallbackProducts = seedCatalog.map((p, idx) => ({
-  _id: p._id || `prod_${idx + 1}_${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
-  ...p,
-  image: p.image || (p.images && p.images[0]) || ''
-}));
+// Calculate photo & product authenticity score:
+// 100: Custom photos uploaded/registered by user (/images/products/...)
+// 80-90: Brand shoot / campaign assets (usealphaco, /uploads/)
+// 20-40: Standard catalog items
+// 10: Generic unsplash fallback
+function getProductPhotoPriority(product) {
+  if (typeof product.priority === 'number' && product.priority > 0) {
+    return product.priority;
+  }
+  const images = Array.isArray(product.images) ? product.images : [];
+  const primaryImg = product.image || (images.length > 0 ? images[0] : '');
+  const allImgs = images.concat(primaryImg ? [primaryImg] : []);
+
+  if (allImgs.some(img => typeof img === 'string' && (img.startsWith('/images/products') || img.includes('md-oversized') || img.includes('md-raglan')))) {
+    return 100;
+  }
+  if (allImgs.some(img => typeof img === 'string' && (img.includes('usealphaco') || img.includes('/uploads/')))) {
+    return 80;
+  }
+  if (product.badge === 'DROP' || product.badge === 'PERFORMANCE' || product.badge === 'BEST SELLER') {
+    return 50;
+  }
+  if (primaryImg && !primaryImg.includes('images.unsplash.com')) {
+    return 30;
+  }
+  return 10;
+}
+
+// Ensure registered/custom photos are ALWAYS first in product.images and thumbnail
+function normalizeProductImages(product) {
+  if (!product) return product;
+  const p = { ...product };
+  if (Array.isArray(p.images) && p.images.length > 0) {
+    const scoreImage = (url) => {
+      if (!url || typeof url !== 'string') return 0;
+      if (url.startsWith('/images/products') || url.includes('md-oversized') || url.includes('md-raglan')) return 3;
+      if (url.includes('/uploads/') || url.includes('usealphaco')) return 2;
+      if (!url.includes('images.unsplash.com')) return 1;
+      return 0;
+    };
+    p.images = [...p.images].sort((a, b) => scoreImage(b) - scoreImage(a));
+    p.image = p.images[0];
+  } else if (p.image) {
+    p.images = [p.image];
+  }
+  return p;
+}
+
+// Fallback static data synchronized with official seedCatalog and prioritized
+const fallbackProducts = seedCatalog.map((p, idx) => {
+  return normalizeProductImages({
+    _id: p._id || `prod_${idx + 1}_${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+    ...p
+  });
+}).sort((a, b) => getProductPhotoPriority(b) - getProductPhotoPriority(a));
 
 function isDbConnected() {
   return mongoose.connection.readyState === 1;
@@ -90,7 +139,11 @@ exports.getProducts = async (req, res) => {
     };
 
     if (!isDbConnected()) {
-      return res.json(filterFallback(fallbackProducts));
+      const filtered = filterFallback(fallbackProducts);
+      const prioritized = filtered
+        .map(normalizeProductImages)
+        .sort((a, b) => getProductPhotoPriority(b) - getProductPhotoPriority(a));
+      return res.json(prioritized);
     }
 
     const filter = {};
@@ -127,7 +180,10 @@ exports.getProducts = async (req, res) => {
       ];
     }
 
-    const products = await Product.find(filter).sort({ createdAt: -1 }).lean();
+    let products = await Product.find(filter).sort({ priority: -1, createdAt: -1 }).lean();
+    products = products
+      .map(normalizeProductImages)
+      .sort((a, b) => getProductPhotoPriority(b) - getProductPhotoPriority(a));
     res.json(products);
   } catch (err) {
     res.json([]);
@@ -204,23 +260,41 @@ exports.getProductById = async (req, res) => {
     if (!isDbConnected()) {
       const product = fallbackProducts.find((p) => p._id === req.params.id);
       if (!product) return res.status(404).json({ message: 'Product not found' });
-      return res.json(product);
+      return res.json(normalizeProductImages(product));
     }
     const product = await Product.findById(req.params.id).lean();
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
+    if (!product) {
+      const fallback = fallbackProducts.find((p) => p._id === req.params.id);
+      if (fallback) return res.json(normalizeProductImages(fallback));
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json(normalizeProductImages(product));
   } catch (err) {
     // Try fallback
     const product = fallbackProducts.find((p) => p._id === req.params.id);
-    if (product) return res.json(product);
+    if (product) return res.json(normalizeProductImages(product));
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, category, price, countInStock, images } = req.body;
-    const product = new Product({ name, description, category, price, countInStock, images });
+    const { name, description, category, price, countInStock, images, priority, badge, sizes, colors, benefits, gender } = req.body;
+    const calcPriority = priority !== undefined ? Number(priority) : getProductPhotoPriority({ images, badge });
+    const product = new Product({
+      name,
+      description,
+      category,
+      price,
+      countInStock,
+      images,
+      priority: calcPriority,
+      badge,
+      sizes,
+      colors,
+      benefits,
+      gender
+    });
     await product.save();
     res.status(201).json(product);
   } catch (err) {
@@ -230,7 +304,7 @@ exports.createProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    const { name, description, category, price, countInStock, images } = req.body;
+    const { name, description, category, price, countInStock, images, priority, badge, sizes, colors, benefits, gender } = req.body;
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
@@ -240,6 +314,16 @@ exports.updateProduct = async (req, res) => {
     product.price = price ?? product.price;
     product.countInStock = countInStock ?? product.countInStock;
     product.images = Array.isArray(images) ? images : product.images;
+    if (priority !== undefined) {
+      product.priority = Number(priority);
+    } else if (images) {
+      product.priority = getProductPhotoPriority({ ...product.toObject(), images });
+    }
+    if (badge !== undefined) product.badge = badge;
+    if (sizes !== undefined) product.sizes = sizes;
+    if (colors !== undefined) product.colors = colors;
+    if (benefits !== undefined) product.benefits = benefits;
+    if (gender !== undefined) product.gender = gender;
 
     await product.save();
     res.json(product);

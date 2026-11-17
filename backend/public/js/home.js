@@ -168,7 +168,7 @@ function render(products, categories, settings) {
         <div class="container-custom">
           <div class="spotlight-grid">
             <a href="/products?gender=masculino" class="spotlight-card">
-              <img src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80" alt="Coleção Masculina" />
+              <img src="/images/products/md-oversized-street-model-front.jpg" alt="Coleção Masculina" />
               <div class="spotlight-overlay"></div>
               <div class="spotlight-content">
                 <span class="spotlight-subtitle">COLEÇÃO MASCULINA</span>
